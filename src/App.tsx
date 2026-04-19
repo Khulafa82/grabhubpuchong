@@ -3,7 +3,20 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
+import { PublicLayout } from "@/components/site/PublicLayout";
+import Home from "./pages/Home";
+import About from "./pages/About";
+import Services from "./pages/Services";
+import Guide from "./pages/Guide";
+import Articles from "./pages/Articles";
+import Contact from "./pages/Contact";
+import StaffLogin from "./pages/StaffLogin";
+import Register from "./pages/Register";
+import RegistrationSuccess from "./pages/RegistrationSuccess";
+import Admin from "./pages/dashboards/Admin";
+import Boss from "./pages/dashboards/Boss";
+import ITTech from "./pages/dashboards/ITTech";
+import SuperAdmin from "./pages/dashboards/SuperAdmin";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -15,8 +28,21 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/guide" element={<Guide />} />
+            <Route path="/articles" element={<Articles />} />
+            <Route path="/contact" element={<Contact />} />
+          </Route>
+          <Route path="/staff-login" element={<StaffLogin />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/registration-success" element={<RegistrationSuccess />} />
+          <Route path="/admin/*" element={<Admin />} />
+          <Route path="/boss/*" element={<Boss />} />
+          <Route path="/it-tech/*" element={<ITTech />} />
+          <Route path="/super-admin/*" element={<SuperAdmin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
