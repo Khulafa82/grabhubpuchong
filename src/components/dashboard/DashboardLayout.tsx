@@ -1,9 +1,11 @@
-import { NavLink, Outlet, Link } from "react-router-dom";
-import { LogOut, Bell, Search, Menu } from "lucide-react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { LogOut, Bell, Search, Menu, Loader2 } from "lucide-react";
 import { useState, type ComponentType } from "react";
 import { Logo } from "@/components/site/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 export type SidebarItem = { label: string; to: string; icon: ComponentType<{ className?: string }> };
 
@@ -15,6 +17,20 @@ interface Props {
 
 export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
   const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await signOut();
+      navigate("/staff-login", { replace: true });
+    } catch (e) {
+      toast.error("Sign out failed. Please try again.");
+      setSigningOut(false);
+    }
+  };
   return (
     <div className="min-h-screen flex bg-surface w-full">
       {/* Sidebar */}
@@ -49,8 +65,14 @@ export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
           ))}
         </nav>
         <div className="p-3 border-t border-charcoal-foreground/10">
-          <Button asChild variant="ghost" className="w-full justify-start text-charcoal-foreground/70 hover:text-charcoal-foreground hover:bg-charcoal-foreground/5">
-            <Link to="/staff-login"><LogOut className="w-4 h-4 mr-2" /> Sign out</Link>
+          <Button
+            variant="ghost"
+            disabled={signingOut}
+            onClick={handleSignOut}
+            className="w-full justify-start text-charcoal-foreground/70 hover:text-charcoal-foreground hover:bg-charcoal-foreground/5"
+          >
+            {signingOut ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <LogOut className="w-4 h-4 mr-2" />}
+            {signingOut ? "Signing out..." : "Sign out"}
           </Button>
         </div>
       </aside>
