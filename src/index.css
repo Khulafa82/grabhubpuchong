@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,7 +11,16 @@ All colors MUST be HSL.
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 220 18% 12%;
+
+    --brand: 145 63% 42%;
+    --brand-foreground: 0 0% 100%;
+    --brand-dark: 150 70% 28%;
+    --brand-glow: 145 70% 55%;
+    --charcoal: 220 18% 14%;
+    --charcoal-foreground: 0 0% 98%;
+    --surface: 220 20% 98%;
+    --surface-muted: 220 16% 95%;
 
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -17,8 +28,8 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 145 63% 42%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -101,5 +112,27 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .gradient-brand {
+    background: linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-dark)));
+  }
+  .gradient-hero {
+    background: radial-gradient(ellipse at top right, hsl(var(--brand) / 0.12), transparent 60%),
+                radial-gradient(ellipse at bottom left, hsl(var(--brand-glow) / 0.08), transparent 60%);
+  }
+  .shadow-brand {
+    box-shadow: 0 10px 30px -10px hsl(var(--brand) / 0.4);
+  }
+  .shadow-card-hover {
+    transition: all 0.3s ease;
+  }
+  .shadow-card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -12px hsl(220 18% 12% / 0.15);
   }
 }
