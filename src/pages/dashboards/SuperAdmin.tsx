@@ -1,12 +1,13 @@
 import { Routes, Route } from "react-router-dom";
 import {
   LayoutDashboard, Users, ShieldCheck, Eye, Shuffle, BarChart3, Server,
-  Calendar, ScrollText, Lock, Sliders, Settings, AlertTriangle,
+  Calendar, ScrollText, Lock, Sliders, Settings, AlertTriangle, Loader2,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PagePlaceholder } from "@/components/dashboard/PagePlaceholder";
 import { Card } from "@/components/ui/card";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 
 const items = [
   { label: "Dashboard Overview", to: "/super-admin", icon: LayoutDashboard },
@@ -23,34 +24,62 @@ const items = [
   { label: "Biodata & Settings", to: "/super-admin/settings", icon: Settings },
 ];
 
-const Overview = () => (
-  <div className="space-y-6">
-    <div>
-      <h1 className="text-2xl font-bold text-charcoal">Super Admin overview</h1>
-      <p className="text-sm text-muted-foreground">Full system control and oversight.</p>
+const Overview = () => {
+  const { counts, loading, error } = useDashboardStats([
+    { key: "totalCustomers", table: "customers" },
+    { key: "totalStaff", table: "staff_profiles" },
+    { key: "activeAdmins", table: "staff_profiles", filters: [{ column: "role", value: "admin" }, { column: "status", value: "active" }] },
+    { key: "pendingLeave", table: "leave_applications", filters: [{ column: "leave_status", value: "submitted" }] },
+    { key: "lockedAccounts", table: "staff_profiles", filters: [{ column: "account_locked", value: true }] },
+    { key: "systemAlerts", table: "security_alerts", filters: [{ column: "alert_status", value: "open" }] },
+    { key: "assignmentWarnings", table: "customers", filters: [{ column: "assignment_status", value: "unassigned" }] },
+    { key: "securityAlerts", table: "security_alerts", filters: [{ column: "alert_status", value: "open" }] },
+  ]);
+
+  const v = (k: string): string => {
+    if (loading) return "…";
+    if (error) return "—";
+    const n = counts[k];
+    return typeof n === "number" ? n.toLocaleString() : "0";
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-charcoal">Super Admin overview</h1>
+          <p className="text-sm text-muted-foreground">Full system control and oversight.</p>
+        </div>
+        {loading && <Loader2 className="w-4 h-4 animate-spin text-brand mt-2" />}
+      </div>
+      {error && (
+        <Card className="p-4 border-destructive/40 bg-destructive/5 text-sm text-destructive">
+          Failed to load some dashboard stats: {error}
+        </Card>
+      )}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Total Customers" value={v("totalCustomers")} icon={Users} />
+        <StatCard label="Total Staff" value={v("totalStaff")} icon={ShieldCheck} accent="charcoal" />
+        <StatCard label="Active Admins" value={v("activeAdmins")} icon={Users} />
+        <StatCard label="Pending Leave" value={v("pendingLeave")} icon={Calendar} accent="muted" />
+        <StatCard label="Locked Accounts" value={v("lockedAccounts")} icon={Lock} />
+        <StatCard label="System Alerts" value={v("systemAlerts")} icon={AlertTriangle} accent="charcoal" />
+        <StatCard label="Assignment Warnings" value={v("assignmentWarnings")} icon={Shuffle} />
+        <StatCard label="Security Alerts" value={v("securityAlerts")} icon={ShieldCheck} accent="muted" />
+      </div>
+      <div className="grid lg:grid-cols-2 gap-5">
+        <Card className="p-6">
+          <h3 className="font-semibold text-charcoal mb-4">Recent system activity</h3>
+          <div className="text-sm text-muted-foreground">Activity stream will populate from audit logs.</div>
+        </Card>
+        <Card className="p-6">
+          <h3 className="font-semibold text-charcoal mb-4">User management overview</h3>
+          <div className="text-sm text-muted-foreground">Roles, sessions, and permissions snapshot.</div>
+        </Card>
+      </div>
     </div>
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <StatCard label="Total Customers" value="—" icon={Users} />
-      <StatCard label="Total Staff" value="—" icon={ShieldCheck} accent="charcoal" />
-      <StatCard label="Active Admins" value="—" icon={Users} />
-      <StatCard label="Pending Leave" value="—" icon={Calendar} accent="muted" />
-      <StatCard label="Locked Accounts" value="—" icon={Lock} />
-      <StatCard label="System Alerts" value="—" icon={AlertTriangle} accent="charcoal" />
-      <StatCard label="Assignment Warnings" value="—" icon={Shuffle} />
-      <StatCard label="Security Alerts" value="—" icon={ShieldCheck} accent="muted" />
-    </div>
-    <div className="grid lg:grid-cols-2 gap-5">
-      <Card className="p-6">
-        <h3 className="font-semibold text-charcoal mb-4">Recent system activity</h3>
-        <div className="text-sm text-muted-foreground">Activity stream will populate from audit logs.</div>
-      </Card>
-      <Card className="p-6">
-        <h3 className="font-semibold text-charcoal mb-4">User management overview</h3>
-        <div className="text-sm text-muted-foreground">Roles, sessions, and permissions snapshot.</div>
-      </Card>
-    </div>
-  </div>
-);
+  );
+};
 
 const SuperAdmin = () => (
   <Routes>
