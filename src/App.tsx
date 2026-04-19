@@ -4,6 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PublicLayout } from "@/components/site/PublicLayout";
+import { AuthProvider } from "@/context/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Services from "./pages/Services";
@@ -27,24 +29,26 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/guide" element={<Guide />} />
-            <Route path="/articles" element={<Articles />} />
-            <Route path="/contact" element={<Contact />} />
-          </Route>
-          <Route path="/staff-login" element={<StaffLogin />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/registration-success" element={<RegistrationSuccess />} />
-          <Route path="/admin/*" element={<Admin />} />
-          <Route path="/boss/*" element={<Boss />} />
-          <Route path="/it-tech/*" element={<ITTech />} />
-          <Route path="/super-admin/*" element={<SuperAdmin />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/guide" element={<Guide />} />
+              <Route path="/articles" element={<Articles />} />
+              <Route path="/contact" element={<Contact />} />
+            </Route>
+            <Route path="/staff-login" element={<StaffLogin />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/registration-success" element={<RegistrationSuccess />} />
+            <Route path="/admin/*" element={<ProtectedRoute role="admin"><Admin /></ProtectedRoute>} />
+            <Route path="/boss/*" element={<ProtectedRoute role="boss"><Boss /></ProtectedRoute>} />
+            <Route path="/it-tech/*" element={<ProtectedRoute role="it_tech"><ITTech /></ProtectedRoute>} />
+            <Route path="/super-admin/*" element={<ProtectedRoute role="super_admin"><SuperAdmin /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
