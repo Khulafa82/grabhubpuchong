@@ -301,7 +301,9 @@ const Register = () => {
             {step < total ? (
               <Button onClick={next} disabled={!canNext} className="gradient-brand">Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
             ) : (
-              <Button onClick={submit} className="gradient-brand"><Check className="w-4 h-4 mr-1" /> Submit Registration</Button>
+              <Button onClick={submit} disabled={submitting} className="gradient-brand">
+                {submitting ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Submitting…</> : <><Check className="w-4 h-4 mr-1" /> Submit Registration</>}
+              </Button>
             )}
           </div>
         </Card>
