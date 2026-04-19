@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff, ShieldCheck, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,73 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Logo } from "@/components/site/Logo";
+import { supabase, ROLE_TO_PATH, StaffRole } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 const StaffLogin = () => {
+  const navigate = useNavigate();
+  const { user, profile, loading: authLoading } = useAuth();
   const [show, setShow] = useState(false);
-  // Placeholders for later Supabase integration
-  const loading = false;
-  const error: string | null = null;
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Auto-redirect if already signed in with valid profile
+  useEffect(() => {
+    if (!authLoading && user && profile && profile.status === "active") {
+      const path = ROLE_TO_PATH[profile.role as StaffRole];
+      if (path) navigate(path, { replace: true });
+    }
+  }, [authLoading, user, profile, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (signInError || !data.user) {
+      setError(signInError?.message || "Invalid credentials. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    // Fetch staff profile
+    const { data: prof, error: profErr } = await supabase
+      .from("staff_profiles")
+      .select("*")
+      .eq("id", data.user.id)
+      .maybeSingle();
+
+    if (profErr || !prof) {
+      await supabase.auth.signOut();
+      setError("Access denied. No staff profile found for this account.");
+      setLoading(false);
+      return;
+    }
+
+    if (prof.status !== "active") {
+      await supabase.auth.signOut();
+      setError("Your account is inactive. Please contact your administrator.");
+      setLoading(false);
+      return;
+    }
+
+    const path = ROLE_TO_PATH[prof.role as StaffRole];
+    if (!path) {
+      await supabase.auth.signOut();
+      setError("Your account role is not recognized.");
+      setLoading(false);
+      return;
+    }
+
+    navigate(path, { replace: true });
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center gradient-hero p-4">
@@ -29,15 +90,30 @@ const StaffLogin = () => {
             <div className="mt-5 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>
           )}
 
-          <div className="mt-6 grid gap-4">
+          <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
             <div>
-              <Label>Email or username</Label>
-              <Input className="mt-1.5" placeholder="you@grabhubpuchong.my" />
+              <Label>Email</Label>
+              <Input
+                type="email"
+                required
+                className="mt-1.5"
+                placeholder="you@grabhubpuchong.my"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+              />
             </div>
             <div>
               <Label>Password</Label>
               <div className="relative mt-1.5">
-                <Input type={show ? "text" : "password"} placeholder="••••••••" />
+                <Input
+                  type={show ? "text" : "password"}
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
                 <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                   {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -45,40 +121,19 @@ const StaffLogin = () => {
             </div>
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center gap-2 cursor-pointer"><Checkbox /> <span>Remember me</span></label>
-              <button className="text-brand hover:underline">Forgot password?</button>
+              <button type="button" className="text-brand hover:underline">Forgot password?</button>
             </div>
-            <Button disabled={loading} className="gradient-brand w-full">
+            <Button type="submit" disabled={loading} className="gradient-brand w-full">
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Signing in…</> : "Sign in"}
             </Button>
-          </div>
+          </form>
 
           <p className="text-xs text-charcoal/50 mt-5 text-center">
             Access restricted. Unauthorized attempts are logged.
           </p>
-
-          {/* Hidden placeholders for future state UIs */}
-          <div className="hidden">
-            <div>Loading state placeholder</div>
-            <div>Invalid credentials placeholder</div>
-            <div>Access denied placeholder</div>
-            <div>Inactive account placeholder</div>
-          </div>
         </Card>
 
-        {/* Dev quick-access (for prototype navigation only — remove once auth is wired) */}
-        <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {[
-            { to: "/admin", l: "Admin" },
-            { to: "/boss", l: "Boss" },
-            { to: "/it-tech", l: "IT Tech" },
-            { to: "/super-admin", l: "Super" },
-          ].map((r) => (
-            <Button key={r.to} asChild size="sm" variant="outline" className="text-xs">
-              <Link to={r.to}>{r.l}</Link>
-            </Button>
-          ))}
-        </div>
-        <p className="text-center text-xs text-charcoal/50 mt-3">
+        <p className="text-center text-xs text-charcoal/50 mt-5">
           <Link to="/" className="hover:text-brand">← Back to homepage</Link>
         </p>
       </div>
