@@ -12,8 +12,8 @@ export interface Customer {
   remarks: string | null;
   admin_in_charge: string | null;
   assignment_status: string | null;
-  last_contacted_at?: string | null;
   created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export const CUSTOMER_STATUS_OPTIONS = [

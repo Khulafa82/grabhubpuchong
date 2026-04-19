@@ -18,9 +18,9 @@ export const useCustomers = ({ adminId, scope }: Options) => {
     let q = supabase
       .from("customers")
       .select(
-        "id, applicant_id, full_name, phone_number, user_role, location_choice, state, customer_status, priority_status, next_follow_up_date, remarks, admin_in_charge, assignment_status, last_contacted_at, created_at",
+        "id, applicant_id, full_name, phone_number, user_role, location_choice, state, customer_status, priority_status, next_follow_up_date, remarks, admin_in_charge, assignment_status, created_at, updated_at",
       )
-      .order("created_at", { ascending: false });
+      .order("updated_at", { ascending: false, nullsFirst: false });
     if (scope === "mine") {
       if (!adminId) {
         setData([]);
