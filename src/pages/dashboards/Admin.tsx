@@ -156,7 +156,7 @@ const MyCustomersPage = () => {
   const markContacted = async (c: Customer) => {
     const { error: err } = await supabase
       .from("customers")
-      .update({ customer_status: "contacted", last_contacted_at: new Date().toISOString() })
+      .update({ customer_status: "contacted" })
       .eq("id", c.id);
     if (err) toast.error(err.message);
     else {
@@ -229,7 +229,7 @@ const ContactsPage = () => {
   const markContacted = async (c: Customer) => {
     const { error: err } = await supabase
       .from("customers")
-      .update({ customer_status: "contacted", last_contacted_at: new Date().toISOString() })
+      .update({ customer_status: "contacted" })
       .eq("id", c.id);
     if (err) toast.error(err.message);
     else {
