@@ -1,12 +1,14 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Car, Bike, MapPin, RefreshCw, UserPlus, ChevronLeft, ChevronRight, Check, AlertCircle } from "lucide-react";
+import { Car, Bike, MapPin, RefreshCw, UserPlus, ChevronLeft, ChevronRight, Check, AlertCircle, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Logo } from "@/components/site/Logo";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 
 type Type = "grabcar" | "grabfood" | "";
 type Status = "new" | "reactivation" | "";
@@ -22,7 +24,9 @@ const stepTitles = [
 
 const Register = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
   const [type, setType] = useState<Type>("");
   const [location, setLocation] = useState("");
   const [status, setStatus] = useState<Status>("");
@@ -43,7 +47,71 @@ const Register = () => {
     return true;
   })();
 
-  const submit = () => navigate("/registration-success");
+  const validateFinal = (): string | null => {
+    if (!personal.name.trim()) return "Full name is required.";
+    if (!/^\d{12}$/.test(personal.ic.trim())) return "IC number must be exactly 12 digits.";
+    if (!personal.phone.trim()) return "Phone number is required.";
+    if (!type) return "Registration type is required.";
+    if (!location) return "Operating location is required.";
+    if (!status) return "Account status is required.";
+    return null;
+  };
+
+  const submit = async () => {
+    const err = validateFinal();
+    if (err) {
+      toast({ title: "Please check the form", description: err, variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+
+    const eligibility_status =
+      eligibility.blueIc === "Yes" && eligibility.record === "No" ? "eligible" : "review";
+
+    const payload: Record<string, unknown> = {
+      full_name: personal.name.trim(),
+      ic_number: personal.ic.trim(),
+      email_address: personal.email.trim() || null,
+      phone_number: personal.phone.trim(),
+      user_role: type === "grabcar" ? "grabcar" : "grabfood",
+      location_choice: location,
+      state: personal.state.trim() || null,
+      account_status: status,
+      blue_ic_status: eligibility.blueIc || null,
+      license_type: eligibility.license || null,
+      criminal_record_status: eligibility.record || null,
+      eligibility_status,
+    };
+
+    if (type === "grabcar") {
+      payload.psv_license_status = vehicle.psv || null;
+      payload.has_car = vehicle.carAvailable === "Yes";
+      payload.car_model = vehicle.carModel || null;
+      payload.car_year = vehicle.carYear ? Number(vehicle.carYear) || vehicle.carYear : null;
+      payload.vehicle_type = "car";
+      payload.vehicle_model = vehicle.carModel || null;
+    } else {
+      payload.has_motorcycle = vehicle.motor === "Yes";
+      payload.motorcycle_details = vehicle.motorDetails || null;
+      payload.vehicle_type = "motorcycle";
+      payload.vehicle_model = vehicle.motorDetails || null;
+    }
+
+    const { error } = await supabase.from("customers").insert(payload);
+
+    setSubmitting(false);
+
+    if (error) {
+      toast({
+        title: "Registration failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    navigate("/registration-success");
+  };
 
   return (
     <div className="min-h-screen bg-surface">
@@ -233,7 +301,9 @@ const Register = () => {
             {step < total ? (
               <Button onClick={next} disabled={!canNext} className="gradient-brand">Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
             ) : (
-              <Button onClick={submit} className="gradient-brand"><Check className="w-4 h-4 mr-1" /> Submit Registration</Button>
+              <Button onClick={submit} disabled={submitting} className="gradient-brand">
+                {submitting ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Submitting…</> : <><Check className="w-4 h-4 mr-1" /> Submit Registration</>}
+              </Button>
             )}
           </div>
         </Card>
