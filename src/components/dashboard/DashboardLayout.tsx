@@ -1,9 +1,11 @@
-import { NavLink, Outlet, Link } from "react-router-dom";
-import { LogOut, Bell, Search, Menu } from "lucide-react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { LogOut, Bell, Search, Menu, Loader2 } from "lucide-react";
 import { useState, type ComponentType } from "react";
 import { Logo } from "@/components/site/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 export type SidebarItem = { label: string; to: string; icon: ComponentType<{ className?: string }> };
 
