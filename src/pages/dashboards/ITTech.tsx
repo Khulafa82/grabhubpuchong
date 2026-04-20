@@ -6,7 +6,14 @@ import {
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { PagePlaceholder } from "@/components/dashboard/PagePlaceholder";
+import StaffAccounts from "./it/StaffAccounts";
+import AdminState from "./it/AdminState";
+import Reassignment from "./it/Reassignment";
+import Handover from "./it/Handover";
+import Duplicates from "./it/Duplicates";
+import Audit from "./it/Audit";
+import TechSettings from "./it/TechSettings";
+import ItSettings from "./it/Settings";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -434,14 +441,14 @@ const ITTech = () => (
   <Routes>
     <Route element={<DashboardLayout role="it" roleLabel="IT Technician" items={items} />}>
       <Route index element={<Overview />} />
-      <Route path="accounts" element={<PagePlaceholder title="Staff Account Management" />} />
-      <Route path="state" element={<PagePlaceholder title="Admin State & Availability" />} />
-      <Route path="reassignment" element={<PagePlaceholder title="Customer Assignment & Reassignment" />} />
-      <Route path="handover" element={<PagePlaceholder title="Leave Handover Execution" />} />
-      <Route path="duplicates" element={<PagePlaceholder title="Customer Data Correction & Duplicate Handling" />} />
-      <Route path="audit" element={<PagePlaceholder title="System Logs & Audit Trail" />} />
-      <Route path="tech-settings" element={<PagePlaceholder title="Technical Settings & Security Controls" />} />
-      <Route path="settings" element={<PagePlaceholder title="Biodata & Settings" />} />
+      <Route path="accounts" element={<StaffAccounts />} />
+      <Route path="state" element={<AdminState />} />
+      <Route path="reassignment" element={<Reassignment />} />
+      <Route path="handover" element={<Handover />} />
+      <Route path="duplicates" element={<Duplicates />} />
+      <Route path="audit" element={<Audit />} />
+      <Route path="tech-settings" element={<TechSettings />} />
+      <Route path="settings" element={<ItSettings />} />
     </Route>
   </Routes>
 );
