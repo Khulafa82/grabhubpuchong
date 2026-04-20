@@ -15,6 +15,7 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { CustomerTable } from "@/components/admin/CustomerTable";
 import { AllCustomersTable } from "@/components/admin/AllCustomersTable";
 import { MyCustomersTable } from "@/components/admin/MyCustomersTable";
+import { ContactListView } from "@/components/admin/ContactListView";
 import { CustomerActionsDialog } from "@/components/admin/CustomerActionsDialog";
 import { Customer, isOverdue, isToday, telLink, waLink, statusBadgeClass } from "@/lib/customers";
 import { supabase } from "@/lib/supabase";
@@ -246,50 +247,33 @@ const AllCustomersPage = () => {
 const ContactsPage = () => {
   const myId = useMyId();
   const { data, loading, error, refetch } = useCustomers({ adminId: myId, scope: "mine" });
-
-  const markContacted = async (c: Customer) => {
-    const { error: err } = await supabase
-      .from("customers")
-      .update({ customer_status: "contacted" })
-      .eq("id", c.id);
-    if (err) toast.error(err.message);
-    else {
-      toast.success("Marked as contacted");
-      refetch();
-    }
-  };
+  const [active, setActive] = useState<Customer | null>(null);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-charcoal">Contact list</h1>
-        <p className="text-sm text-muted-foreground">Quick contact directory for your assigned customers.</p>
-      </div>
-      {error && <Card className="p-4 border-destructive/40 bg-destructive/5 text-sm text-destructive">{error}</Card>}
-      {loading ? (
-        <Card className="p-10 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-brand" /></Card>
-      ) : data.length === 0 ? (
-        <Card className="p-10 text-center text-sm text-muted-foreground">No assigned customers.</Card>
-      ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.map((c) => (
-            <Card key={c.id} className="p-4 space-y-3">
-              <div>
-                <div className="font-semibold text-charcoal">{c.full_name ?? "—"}</div>
-                <div className="text-xs text-muted-foreground">{c.phone_number ?? "—"}</div>
-              </div>
-              <Badge variant="outline" className={statusBadgeClass(c.customer_status)}>
-                {c.customer_status ?? "new"}
-              </Badge>
-              <div className="flex flex-wrap gap-2">
-                <Button asChild size="sm" variant="outline"><a href={telLink(c.phone_number)}><Phone className="w-3 h-3 mr-1" /> Call</a></Button>
-                <Button asChild size="sm" variant="outline"><a href={waLink(c.phone_number)} target="_blank" rel="noreferrer"><MessageCircle className="w-3 h-3 mr-1" /> WhatsApp</a></Button>
-                <Button size="sm" variant="ghost" onClick={() => markContacted(c)}><CheckCircle2 className="w-3 h-3 mr-1" /> Contacted</Button>
-              </div>
-            </Card>
-          ))}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-charcoal">Contact list</h1>
+          <p className="text-sm text-muted-foreground">
+            Communication workspace for your assigned customers.
+          </p>
         </div>
-      )}
+        <Button variant="outline" onClick={refetch} disabled={loading}>Refresh</Button>
+      </div>
+      <ContactListView
+        rows={data}
+        loading={loading}
+        error={error}
+        refetch={refetch}
+        onEdit={setActive}
+      />
+      <CustomerActionsDialog
+        key={active?.id ?? "none"}
+        customer={active}
+        open={!!active}
+        onOpenChange={(o) => !o && setActive(null)}
+        onSaved={refetch}
+      />
     </div>
   );
 };
