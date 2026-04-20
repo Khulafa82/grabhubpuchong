@@ -128,7 +128,7 @@ const LeaveApplication = () => {
             <Select value={leaveType} onValueChange={setLeaveType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {LEAVE_TYPES.map((t) => <SelectItem key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</SelectItem>)}
+                {LEAVE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
