@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import {
   LayoutDashboard, Users, ShieldCheck, Eye, Shuffle, BarChart3, Server,
-  Calendar, ScrollText, Lock, Sliders, Settings, AlertTriangle, Loader2,
+  Calendar, ScrollText, Lock, Sliders, Settings, AlertTriangle, Loader2, CalendarCheck,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -9,6 +9,7 @@ import { PagePlaceholder } from "@/components/dashboard/PagePlaceholder";
 import { Card } from "@/components/ui/card";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import BiodataSettings from "@/components/dashboard/BiodataSettings";
+import LeaveManagement from "./super/LeaveManagement";
 
 const items = [
   { label: "Dashboard Overview", to: "/super-admin", icon: LayoutDashboard },
@@ -20,6 +21,7 @@ const items = [
   { label: "IT Operations", to: "/super-admin/it", icon: Server },
   { label: "PSV Calendar", to: "/super-admin/psv", icon: Calendar },
   { label: "Global Logs", to: "/super-admin/logs", icon: ScrollText },
+  { label: "Leave Management", to: "/super-admin/leave", icon: CalendarCheck },
   { label: "Security Control", to: "/super-admin/security", icon: Lock },
   { label: "System Settings", to: "/super-admin/system", icon: Sliders },
   { label: "Biodata & Settings", to: "/super-admin/settings", icon: Settings },
@@ -94,6 +96,7 @@ const SuperAdmin = () => (
       <Route path="it" element={<PagePlaceholder title="IT Operations View" />} />
       <Route path="psv" element={<PagePlaceholder title="PSV Calendar Management" />} />
       <Route path="logs" element={<PagePlaceholder title="Global Logs & Audit Trail" />} />
+      <Route path="leave" element={<LeaveManagement />} />
       <Route path="security" element={<PagePlaceholder title="Security & Session Control" />} />
       <Route path="system" element={<PagePlaceholder title="System Settings" />} />
       <Route path="settings" element={<BiodataSettings roleLabel="Super Admin" />} />
