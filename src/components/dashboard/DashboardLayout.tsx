@@ -4,8 +4,17 @@ import { useState, type ComponentType } from "react";
 import { Logo } from "@/components/site/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+
+const initialsOf = (name?: string | null) =>
+  (name ?? "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase() ?? "")
+    .join("") || "U";
 
 export type SidebarItem = { label: string; to: string; icon: ComponentType<{ className?: string }> };
 
@@ -18,8 +27,11 @@ interface Props {
 export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const { signOut } = useAuth();
+  const { signOut, profile } = useAuth();
   const navigate = useNavigate();
+  const displayName = profile?.full_name?.trim() || "Staff User";
+  const photo = profile?.profile_photo_url || undefined;
+  const avatarBg = profile?.avatar_color || undefined;
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -90,11 +102,17 @@ export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
           <div className="flex-1 md:hidden" />
           <Button variant="ghost" size="icon"><Bell className="w-4 h-4" /></Button>
           <div className="flex items-center gap-2 pl-3 border-l border-border">
-            <div className="w-8 h-8 rounded-full gradient-brand flex items-center justify-center text-brand-foreground font-semibold text-sm">
-              {role.charAt(0).toUpperCase()}
-            </div>
+            <Avatar className="w-8 h-8">
+              {photo ? <AvatarImage src={photo} alt={displayName} /> : null}
+              <AvatarFallback
+                className="text-xs font-semibold text-brand-foreground"
+                style={avatarBg ? { backgroundColor: avatarBg } : { background: "hsl(var(--brand))" }}
+              >
+                {initialsOf(displayName) || role.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
             <div className="hidden sm:block leading-tight">
-              <div className="text-sm font-medium">Staff User</div>
+              <div className="text-sm font-medium">{displayName}</div>
               <div className="text-xs text-muted-foreground">{roleLabel}</div>
             </div>
           </div>
