@@ -153,8 +153,9 @@ const HandoverWizard = ({ leave, open, onClose, onCompleted }: Props) => {
         setAbsent(absentRes.data as AbsentAdmin);
         setCustomers((custRes.data ?? []) as CustomerRow[]);
 
-        const reps = ((repRes.data ?? []) as Array<ReplacementAdmin & { account_locked: boolean | null }>)
-          .filter((r) => !r.account_locked);
+        const reps = ((repRes.data ?? []) as Array<{ id: string; full_name: string | null; username: string | null; account_locked: boolean | null }>)
+          .filter((r) => !r.account_locked)
+          .map((r) => ({ id: r.id, full_name: r.full_name, username: r.username }));
         const repIds = reps.map((r) => r.id);
         let counts: Record<string, number> = {};
         if (repIds.length) {
