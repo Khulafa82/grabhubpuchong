@@ -20,6 +20,8 @@ export interface StaffProfile {
   status: string;
   full_name?: string | null;
   email?: string | null;
+  profile_photo_url?: string | null;
+  avatar_color?: string | null;
 }
 
 export const ROLE_TO_PATH: Record<StaffRole, string> = {
