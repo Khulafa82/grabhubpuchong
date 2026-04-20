@@ -23,7 +23,7 @@ interface Leave {
   created_at: string | null;
 }
 
-const LEAVE_TYPES = ["annual", "emergency", "medical"];
+const LEAVE_TYPES = ["Annual", "Medical", "Emergency", "Unpaid", "Resignation"];
 
 const statusBadge = (s?: string | null) => {
   switch (s) {
