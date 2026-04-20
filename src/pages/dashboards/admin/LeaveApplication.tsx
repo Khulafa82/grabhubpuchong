@@ -62,7 +62,7 @@ const LeaveApplication = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const [leaveType, setLeaveType] = useState("annual");
+  const [leaveType, setLeaveType] = useState("Annual");
   const [startDate, setStartDate] = useState(todayStr());
   const [endDate, setEndDate] = useState(todayStr());
   const [reason, setReason] = useState("");
