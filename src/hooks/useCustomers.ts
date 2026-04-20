@@ -7,6 +7,9 @@ interface Options {
   scope: "mine" | "all";
 }
 
+const SELECT_COLUMNS =
+  "id, applicant_id, full_name, phone_number, ic_number, user_role, location_choice, state, customer_status, priority_status, account_status, next_follow_up_date, remarks, admin_in_charge, assignment_status, registration_date, created_at, updated_at";
+
 export const useCustomers = ({ adminId, scope }: Options) => {
   const [data, setData] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,9 +20,7 @@ export const useCustomers = ({ adminId, scope }: Options) => {
     setError(null);
     let q = supabase
       .from("customers")
-      .select(
-        "id, applicant_id, full_name, phone_number, user_role, location_choice, state, customer_status, priority_status, next_follow_up_date, remarks, admin_in_charge, assignment_status, created_at, updated_at",
-      )
+      .select(SELECT_COLUMNS)
       .order("updated_at", { ascending: false, nullsFirst: false });
     if (scope === "mine") {
       if (!adminId) {
@@ -33,9 +34,30 @@ export const useCustomers = ({ adminId, scope }: Options) => {
     if (err) {
       setError(err.message);
       setData([]);
-    } else {
-      setData((rows ?? []) as Customer[]);
+      setLoading(false);
+      return;
     }
+    const customers = (rows ?? []) as Customer[];
+
+    // Resolve assigned admin names in a second query (avoids relying on FK relation).
+    const adminIds = Array.from(
+      new Set(customers.map((c) => c.admin_in_charge).filter((v): v is string => !!v)),
+    );
+    if (adminIds.length) {
+      const { data: staff } = await supabase
+        .from("staff_profiles")
+        .select("id, full_name")
+        .in("id", adminIds);
+      const nameMap = new Map<string, string>();
+      (staff ?? []).forEach((s: { id: string; full_name: string | null }) => {
+        if (s.full_name) nameMap.set(s.id, s.full_name);
+      });
+      customers.forEach((c) => {
+        if (c.admin_in_charge) c.assigned_admin_name = nameMap.get(c.admin_in_charge) ?? null;
+      });
+    }
+
+    setData(customers);
     setLoading(false);
   }, [adminId, scope]);
 
