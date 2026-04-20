@@ -198,9 +198,17 @@ const Handover = () => {
               <td className="py-2.5 px-4 text-muted-foreground max-w-[180px] truncate" title={l.reason ?? ""}>{l.reason ?? "—"}</td>
               <td className="py-2.5 px-4 text-muted-foreground max-w-[180px] truncate" title={l.handover_note ?? ""}>{l.handover_note ?? "—"}</td>
               <td className="py-2.5 px-4 text-right">
-                <Button size="sm" onClick={() => setActiveLeave(l)} className="gradient-brand">
-                  <PlayCircle className="w-3.5 h-3.5" /> Start handover
-                </Button>
+                <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                  <Button size="sm" onClick={() => setActiveLeave(l)} className="gradient-brand">
+                    <PlayCircle className="w-3.5 h-3.5" /> Start handover
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setConfirmAction({ type: "done", leave: l })}>
+                    <Check className="w-3.5 h-3.5" /> Mark done
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setConfirmAction({ type: "delete", leave: l })} className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </Button>
+                </div>
               </td>
             </tr>
           ))}
