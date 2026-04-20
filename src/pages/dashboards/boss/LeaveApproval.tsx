@@ -14,6 +14,8 @@ interface Leave {
   end_date: string | null;
   reason: string | null;
   leave_status: string | null;
+  handover_required: boolean | null;
+  handover_completed: boolean | null;
   created_at: string | null;
   staff_name?: string | null;
 }
@@ -22,9 +24,17 @@ const statusClass = (s?: string | null) => {
   switch (s) {
     case "approved": return "bg-brand/10 text-brand border-brand/20";
     case "rejected": return "bg-destructive/10 text-destructive border-destructive/20";
-    case "submitted": return "bg-charcoal/10 text-charcoal border-charcoal/20";
+    case "pending":
+    case "submitted": return "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20";
     default: return "bg-muted text-muted-foreground border-border";
   }
+};
+
+const daysBetween = (a?: string | null, b?: string | null) => {
+  if (!a || !b) return 0;
+  const ms = new Date(b).getTime() - new Date(a).getTime();
+  if (isNaN(ms) || ms < 0) return 0;
+  return Math.floor(ms / 86400000) + 1;
 };
 
 const LeaveApproval = () => {
@@ -37,7 +47,7 @@ const LeaveApproval = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("leave_applications")
-      .select("id, staff_id, leave_type, start_date, end_date, reason, leave_status, created_at")
+      .select("id, staff_id, leave_type, start_date, end_date, reason, leave_status, handover_required, handover_completed, created_at")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) {
@@ -93,8 +103,10 @@ const LeaveApproval = () => {
                   <th className="py-3 px-4 font-medium">Type</th>
                   <th className="py-3 px-4 font-medium">From</th>
                   <th className="py-3 px-4 font-medium">To</th>
+                  <th className="py-3 px-4 font-medium">Days</th>
                   <th className="py-3 px-4 font-medium">Reason</th>
                   <th className="py-3 px-4 font-medium">Status</th>
+                  <th className="py-3 px-4 font-medium">Handover</th>
                   <th className="py-3 px-4 font-medium text-right">Action</th>
                 </tr>
               </thead>
@@ -105,11 +117,17 @@ const LeaveApproval = () => {
                   return (
                     <tr key={l.id} className="border-b border-border/60">
                       <td className="py-2.5 px-4 font-medium text-charcoal">{l.staff_name}</td>
-                      <td className="py-2.5 px-4 text-muted-foreground">{l.leave_type ?? "—"}</td>
+                      <td className="py-2.5 px-4 text-muted-foreground capitalize">{l.leave_type ?? "—"}</td>
                       <td className="py-2.5 px-4 text-muted-foreground">{l.start_date ?? "—"}</td>
                       <td className="py-2.5 px-4 text-muted-foreground">{l.end_date ?? "—"}</td>
-                      <td className="py-2.5 px-4 text-muted-foreground max-w-[260px] truncate" title={l.reason ?? ""}>{l.reason ?? "—"}</td>
+                      <td className="py-2.5 px-4 text-muted-foreground">{daysBetween(l.start_date, l.end_date)}</td>
+                      <td className="py-2.5 px-4 text-muted-foreground max-w-[220px] truncate" title={l.reason ?? ""}>{l.reason ?? "—"}</td>
                       <td className="py-2.5 px-4"><Badge variant="outline" className={statusClass(l.leave_status)}>{l.leave_status ?? "—"}</Badge></td>
+                      <td className="py-2.5 px-4">
+                        {!l.handover_required ? <span className="text-xs text-muted-foreground">Not required</span>
+                          : l.handover_completed ? <Badge variant="outline" className="bg-brand/10 text-brand border-brand/20">Completed</Badge>
+                          : <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">Pending</Badge>}
+                      </td>
                       <td className="py-2.5 px-4 text-right">
                         {pending ? (
                           <div className="flex justify-end gap-2">
