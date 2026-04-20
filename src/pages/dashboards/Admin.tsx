@@ -22,6 +22,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import BiodataSettings from "@/components/dashboard/BiodataSettings";
 import LeaveApplication from "./admin/LeaveApplication";
+import { PsvCalendarPage } from "@/components/psv/PsvCalendarPage";
 
 const items = [
   { label: "Dashboard", to: "/admin", icon: LayoutDashboard },
@@ -287,7 +288,7 @@ const Admin = () => (
       <Route path="my-customers" element={<MyCustomersPage />} />
       <Route path="contacts" element={<ContactsPage />} />
       <Route path="leave" element={<LeaveApplication />} />
-      <Route path="psv-calendar" element={<PagePlaceholder title="PSV Calendar" description="Upcoming PSV course & test schedule." />} />
+      <Route path="psv-calendar" element={<PsvCalendarPage role="admin" />} />
       <Route path="settings" element={<BiodataSettings roleLabel="Admin" />} />
     </Route>
   </Routes>
