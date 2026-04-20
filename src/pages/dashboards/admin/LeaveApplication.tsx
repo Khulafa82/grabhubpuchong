@@ -191,7 +191,7 @@ const LeaveApplication = () => {
                     <td className="py-2.5 px-4 text-muted-foreground">{r.start_date ?? "—"}</td>
                     <td className="py-2.5 px-4 text-muted-foreground">{r.end_date ?? "—"}</td>
                     <td className="py-2.5 px-4 text-muted-foreground">{daysBetween(r.start_date, r.end_date)}</td>
-                    <td className="py-2.5 px-4"><Badge variant="outline" className={statusBadge(r.leave_status)}>{r.leave_status ?? "—"}</Badge></td>
+                    <td className="py-2.5 px-4"><Badge variant="outline" className={statusBadge(r.leave_status)}>{statusLabel(r.leave_status)}</Badge></td>
                     <td className="py-2.5 px-4">{r.handover_required ? <Badge variant="outline" className="bg-charcoal/10 text-charcoal border-charcoal/20">Yes</Badge> : <span className="text-muted-foreground">No</span>}</td>
                     <td className="py-2.5 px-4">{r.handover_completed ? <Badge variant="outline" className="bg-brand/10 text-brand border-brand/20">Done</Badge> : <span className="text-muted-foreground">—</span>}</td>
                     <td className="py-2.5 px-4 text-muted-foreground">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}</td>
