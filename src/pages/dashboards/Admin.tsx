@@ -21,6 +21,7 @@ import { Customer, isOverdue, isToday, telLink, waLink, statusBadgeClass } from 
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import BiodataSettings from "@/components/dashboard/BiodataSettings";
+import LeaveApplication from "./admin/LeaveApplication";
 
 const items = [
   { label: "Dashboard", to: "/admin", icon: LayoutDashboard },
@@ -285,7 +286,7 @@ const Admin = () => (
       <Route path="all-customers" element={<AllCustomersPage />} />
       <Route path="my-customers" element={<MyCustomersPage />} />
       <Route path="contacts" element={<ContactsPage />} />
-      <Route path="leave" element={<PagePlaceholder title="Leave Application" description="Apply for leave and view history." />} />
+      <Route path="leave" element={<LeaveApplication />} />
       <Route path="psv-calendar" element={<PagePlaceholder title="PSV Calendar" description="Upcoming PSV course & test schedule." />} />
       <Route path="settings" element={<BiodataSettings roleLabel="Admin" />} />
     </Route>
