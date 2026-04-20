@@ -17,6 +17,7 @@ import { CustomerActionsDialog } from "@/components/admin/CustomerActionsDialog"
 import { Customer, isOverdue, isToday, telLink, waLink, statusBadgeClass } from "@/lib/customers";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import BiodataSettings from "@/components/dashboard/BiodataSettings";
 
 const items = [
   { label: "Dashboard", to: "/admin", icon: LayoutDashboard },
@@ -282,7 +283,7 @@ const Admin = () => (
       <Route path="contacts" element={<ContactsPage />} />
       <Route path="leave" element={<PagePlaceholder title="Leave Application" description="Apply for leave and view history." />} />
       <Route path="psv-calendar" element={<PagePlaceholder title="PSV Calendar" description="Upcoming PSV course & test schedule." />} />
-      <Route path="settings" element={<PagePlaceholder title="Biodata & Settings" description="Update your profile and preferences." />} />
+      <Route path="settings" element={<BiodataSettings roleLabel="Admin" />} />
     </Route>
   </Routes>
 );

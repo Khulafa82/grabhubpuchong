@@ -8,6 +8,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { PagePlaceholder } from "@/components/dashboard/PagePlaceholder";
 import { Card } from "@/components/ui/card";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
+import BiodataSettings from "@/components/dashboard/BiodataSettings";
 
 const items = [
   { label: "Dashboard Overview", to: "/super-admin", icon: LayoutDashboard },
@@ -95,7 +96,7 @@ const SuperAdmin = () => (
       <Route path="logs" element={<PagePlaceholder title="Global Logs & Audit Trail" />} />
       <Route path="security" element={<PagePlaceholder title="Security & Session Control" />} />
       <Route path="system" element={<PagePlaceholder title="System Settings" />} />
-      <Route path="settings" element={<PagePlaceholder title="Biodata & Settings" />} />
+      <Route path="settings" element={<BiodataSettings roleLabel="Super Admin" />} />
     </Route>
   </Routes>
 );
