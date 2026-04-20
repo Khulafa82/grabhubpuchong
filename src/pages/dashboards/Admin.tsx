@@ -1,7 +1,7 @@
 import { Routes, Route, NavLink as RouterNavLink } from "react-router-dom";
 import {
   LayoutDashboard, Users, UserCheck, Phone, CalendarOff, Calendar, Settings,
-  Clock, MessageCircle, AlertCircle, CheckCircle2, Loader2,
+  Clock, MessageCircle, AlertCircle, CheckCircle2, Loader2, CalendarClock, ClipboardList,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
