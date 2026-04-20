@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, PlayCircle, X } from "lucide-react";
+import { CheckCircle2, Loader2, PlayCircle, X, Check, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import HandoverWizard, { LeaveRow } from "./HandoverWizard";
 
 interface EnrichedLeave extends LeaveRow {
@@ -12,11 +15,14 @@ interface EnrichedLeave extends LeaveRow {
 }
 
 const Handover = () => {
+  const { user } = useAuth();
   const [rows, setRows] = useState<EnrichedLeave[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeLeave, setActiveLeave] = useState<LeaveRow | null>(null);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: "done" | "delete"; leave: EnrichedLeave } | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -96,6 +102,56 @@ const Handover = () => {
     window.setTimeout(() => setSuccessBanner(null), 6000);
   };
 
+  const runConfirmedAction = async () => {
+    if (!confirmAction) return;
+    const { type, leave } = confirmAction;
+    setActionBusy(true);
+    try {
+      if (type === "done") {
+        const { error: updErr } = await supabase
+          .from("leave_applications")
+          .update({ handover_completed: true })
+          .eq("id", leave.id);
+        if (updErr) throw updErr;
+        // Best-effort audit log
+        if (user) {
+          await supabase.from("activity_logs").insert({
+            module: "leave_handover",
+            action: "MARK_HANDOVER_DONE",
+            description: `Marked handover done (no reassignment) for ${leave.staff_name ?? leave.staff_id} · leave ${leave.start_date} → ${leave.end_date}`,
+            performed_by: user.id,
+            performed_by_role: "it_tech",
+          }).then(({ error: e }) => { if (e) console.warn("activity_logs insert failed:", e.message); });
+        }
+        toast.success("Handover marked as done.");
+        setSuccessBanner("Handover marked as done.");
+        window.setTimeout(() => setSuccessBanner(null), 6000);
+      } else {
+        const { error: delErr } = await supabase
+          .from("leave_applications")
+          .delete()
+          .eq("id", leave.id);
+        if (delErr) throw delErr;
+        if (user) {
+          await supabase.from("activity_logs").insert({
+            module: "leave_handover",
+            action: "DELETE_LEAVE_REQUEST",
+            description: `Deleted leave request for ${leave.staff_name ?? leave.staff_id} · ${leave.start_date} → ${leave.end_date}`,
+            performed_by: user.id,
+            performed_by_role: "it_tech",
+          }).then(({ error: e }) => { if (e) console.warn("activity_logs insert failed:", e.message); });
+        }
+        toast.success("Leave request deleted.");
+      }
+      setConfirmAction(null);
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Action failed");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
   const handoverBadge = (l: EnrichedLeave) => {
     if (l.leave_status === "rejected") {
       return <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">Rejected</Badge>;
@@ -142,9 +198,17 @@ const Handover = () => {
               <td className="py-2.5 px-4 text-muted-foreground max-w-[180px] truncate" title={l.reason ?? ""}>{l.reason ?? "—"}</td>
               <td className="py-2.5 px-4 text-muted-foreground max-w-[180px] truncate" title={l.handover_note ?? ""}>{l.handover_note ?? "—"}</td>
               <td className="py-2.5 px-4 text-right">
-                <Button size="sm" onClick={() => setActiveLeave(l)} className="gradient-brand">
-                  <PlayCircle className="w-3.5 h-3.5" /> Start handover
-                </Button>
+                <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                  <Button size="sm" onClick={() => setActiveLeave(l)} className="gradient-brand">
+                    <PlayCircle className="w-3.5 h-3.5" /> Start handover
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setConfirmAction({ type: "done", leave: l })}>
+                    <Check className="w-3.5 h-3.5" /> Mark done
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setConfirmAction({ type: "delete", leave: l })} className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </Button>
+                </div>
               </td>
             </tr>
           ))}
@@ -241,6 +305,33 @@ const Handover = () => {
           onCompleted={handleCompleted}
         />
       )}
+
+      <AlertDialog open={!!confirmAction} onOpenChange={(v) => !v && !actionBusy && setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.type === "delete" ? "Delete leave request?" : "Mark handover as done?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.type === "delete" ? (
+                <>This will permanently delete the leave request for <span className="font-medium text-charcoal">{confirmAction.leave.staff_name}</span> ({confirmAction.leave.start_date} → {confirmAction.leave.end_date}). This action cannot be undone.</>
+              ) : (
+                <>This marks the handover as completed for <span className="font-medium text-charcoal">{confirmAction?.leave.staff_name}</span> without running the guided wizard. No customers will be reassigned. The record will move to "All other leave records".</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionBusy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); runConfirmedAction(); }}
+              disabled={actionBusy}
+              className={confirmAction?.type === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              {actionBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : confirmAction?.type === "delete" ? "Delete" : "Mark done"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
