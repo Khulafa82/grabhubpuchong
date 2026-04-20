@@ -4,6 +4,9 @@ import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 interface Leave {
@@ -43,6 +46,10 @@ const LeaveApproval = () => {
   const [error, setError] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
 
+  const [approveTarget, setApproveTarget] = useState<Leave | null>(null);
+  const [handoverChoice, setHandoverChoice] = useState<"required" | "not_required">("required");
+  const [confirming, setConfirming] = useState(false);
+
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -68,14 +75,45 @@ const LeaveApproval = () => {
 
   useEffect(() => { load(); }, []);
 
-  const decide = async (id: string, decision: "approved" | "rejected") => {
-    setActingId(id);
-    const { error } = await supabase.from("leave_applications").update({ leave_status: decision }).eq("id", id);
+  const openApprove = (l: Leave) => {
+    setApproveTarget(l);
+    setHandoverChoice(l.handover_required === false ? "not_required" : "required");
+  };
+
+  const confirmApprove = async () => {
+    if (!approveTarget) return;
+    setConfirming(true);
+    const required = handoverChoice === "required";
+    const { error } = await supabase
+      .from("leave_applications")
+      .update({
+        leave_status: "approved",
+        handover_required: required,
+        handover_completed: required ? false : true,
+      })
+      .eq("id", approveTarget.id);
+    setConfirming(false);
     if (error) {
-      toast.error(`Failed to ${decision === "approved" ? "approve" : "reject"}: ${error.message}`);
-    } else {
-      toast.success(`Leave ${decision}`);
-      setRows((prev) => prev.map((r) => (r.id === id ? { ...r, leave_status: decision } : r)));
+      toast.error(`Failed to approve: ${error.message}`);
+      return;
+    }
+    toast.success(`Leave approved${required ? " (handover required)" : " (no handover needed)"}`);
+    setRows((prev) => prev.map((r) => (r.id === approveTarget.id ? {
+      ...r,
+      leave_status: "approved",
+      handover_required: required,
+      handover_completed: required ? false : true,
+    } : r)));
+    setApproveTarget(null);
+  };
+
+  const reject = async (id: string) => {
+    setActingId(id);
+    const { error } = await supabase.from("leave_applications").update({ leave_status: "rejected" }).eq("id", id);
+    if (error) toast.error(`Failed to reject: ${error.message}`);
+    else {
+      toast.success("Leave rejected");
+      setRows((prev) => prev.map((r) => (r.id === id ? { ...r, leave_status: "rejected" } : r)));
     }
     setActingId(null);
   };
@@ -117,26 +155,30 @@ const LeaveApproval = () => {
                   return (
                     <tr key={l.id} className="border-b border-border/60">
                       <td className="py-2.5 px-4 font-medium text-charcoal">{l.staff_name}</td>
-                      <td className="py-2.5 px-4 text-muted-foreground capitalize">{l.leave_type ?? "—"}</td>
+                      <td className="py-2.5 px-4 text-muted-foreground">{l.leave_type ?? "—"}</td>
                       <td className="py-2.5 px-4 text-muted-foreground">{l.start_date ?? "—"}</td>
                       <td className="py-2.5 px-4 text-muted-foreground">{l.end_date ?? "—"}</td>
                       <td className="py-2.5 px-4 text-muted-foreground">{daysBetween(l.start_date, l.end_date)}</td>
                       <td className="py-2.5 px-4 text-muted-foreground max-w-[220px] truncate" title={l.reason ?? ""}>{l.reason ?? "—"}</td>
                       <td className="py-2.5 px-4"><Badge variant="outline" className={statusClass(l.leave_status)}>{l.leave_status ?? "—"}</Badge></td>
                       <td className="py-2.5 px-4">
-                        {!l.handover_required ? <span className="text-xs text-muted-foreground">Not required</span>
-                          : l.handover_completed ? <Badge variant="outline" className="bg-brand/10 text-brand border-brand/20">Completed</Badge>
-                          : <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">Pending</Badge>}
+                        {l.handover_completed ? (
+                          <Badge variant="outline" className="bg-brand/10 text-brand border-brand/20">Completed</Badge>
+                        ) : l.handover_required === false ? (
+                          <Badge variant="outline" className="bg-muted text-muted-foreground border-border">Not required</Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">Required</Badge>
+                        )}
                       </td>
                       <td className="py-2.5 px-4 text-right">
                         {pending ? (
                           <div className="flex justify-end gap-2">
-                            <Button size="sm" disabled={busy} onClick={() => decide(l.id, "approved")} className="gradient-brand">
-                              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                            <Button size="sm" disabled={busy} onClick={() => openApprove(l)} className="gradient-brand">
+                              <Check className="w-3.5 h-3.5" />
                               Approve
                             </Button>
-                            <Button size="sm" variant="outline" disabled={busy} onClick={() => decide(l.id, "rejected")}>
-                              <X className="w-3.5 h-3.5" /> Reject
+                            <Button size="sm" variant="outline" disabled={busy} onClick={() => reject(l.id)}>
+                              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />} Reject
                             </Button>
                           </div>
                         ) : (
@@ -151,6 +193,55 @@ const LeaveApproval = () => {
           </div>
         )}
       </Card>
+
+      <Dialog open={!!approveTarget} onOpenChange={(o) => !o && setApproveTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Approve Leave Request</DialogTitle>
+            <DialogDescription>Confirm leave details and decide on handover.</DialogDescription>
+          </DialogHeader>
+          {approveTarget && (
+            <div className="space-y-4">
+              <div className="rounded-md border border-border bg-surface-muted p-3 text-sm space-y-1.5">
+                <div className="flex justify-between"><span className="text-muted-foreground">Staff</span><span className="font-medium text-charcoal">{approveTarget.staff_name}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Type</span><span className="font-medium text-charcoal">{approveTarget.leave_type ?? "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Date range</span><span className="font-medium text-charcoal">{approveTarget.start_date} → {approveTarget.end_date}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Duration</span><span className="font-medium text-charcoal">{daysBetween(approveTarget.start_date, approveTarget.end_date)} day(s)</span></div>
+                <div className="pt-1.5">
+                  <div className="text-muted-foreground mb-1">Reason</div>
+                  <div className="text-charcoal whitespace-pre-wrap">{approveTarget.reason ?? "—"}</div>
+                </div>
+              </div>
+
+              <div>
+                <Label className="mb-2 block">Handover decision</Label>
+                <RadioGroup value={handoverChoice} onValueChange={(v) => setHandoverChoice(v as "required" | "not_required")}>
+                  <div className="flex items-start gap-2 rounded-md border border-border p-3 cursor-pointer" onClick={() => setHandoverChoice("required")}>
+                    <RadioGroupItem value="required" id="ho-required" className="mt-0.5" />
+                    <div>
+                      <Label htmlFor="ho-required" className="cursor-pointer">Handover Required</Label>
+                      <p className="text-xs text-muted-foreground">IT Tech will reassign customers during the leave period.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 rounded-md border border-border p-3 cursor-pointer" onClick={() => setHandoverChoice("not_required")}>
+                    <RadioGroupItem value="not_required" id="ho-not" className="mt-0.5" />
+                    <div>
+                      <Label htmlFor="ho-not" className="cursor-pointer">Handover Not Required</Label>
+                      <p className="text-xs text-muted-foreground">No customer reassignment needed for this leave.</p>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproveTarget(null)} disabled={confirming}>Cancel</Button>
+            <Button onClick={confirmApprove} disabled={confirming} className="gradient-brand">
+              {confirming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Confirm Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
