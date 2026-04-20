@@ -137,7 +137,7 @@ const LeaveApplication = () => {
             <Label>Duration</Label>
             <div className="h-10 px-3 flex items-center rounded-md border border-input bg-surface-muted text-sm">
               {duration} day{duration === 1 ? "" : "s"}
-              {handoverRequired && <Badge variant="outline" className="ml-2 bg-destructive/10 text-destructive border-destructive/20">Handover required</Badge>}
+              <Badge variant="outline" className="ml-2 bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">Handover decision by Boss</Badge>
             </div>
           </div>
           <div className="space-y-1.5">
