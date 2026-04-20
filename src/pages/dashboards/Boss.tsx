@@ -5,7 +5,6 @@ import {
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { PagePlaceholder } from "@/components/dashboard/PagePlaceholder";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +12,11 @@ import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useBossOverview } from "@/hooks/useBossOverview";
 import { statusBadgeClass } from "@/lib/customers";
 import BossReports from "./boss/Reports";
+import BossCustomers from "./boss/CustomersList";
+import BossAssignments from "./boss/Assignments";
+import BossLeave from "./boss/LeaveApproval";
+import BossPerformance from "./boss/Performance";
+import BossSettings from "./boss/Settings";
 
 const items = [
   { label: "Dashboard Overview", to: "/boss", icon: LayoutDashboard },
@@ -245,12 +249,12 @@ const Boss = () => (
   <Routes>
     <Route element={<DashboardLayout role="boss" roleLabel="Boss" items={items} />}>
       <Route index element={<Overview />} />
-      <Route path="customers" element={<PagePlaceholder title="All Customer Data" />} />
-      <Route path="performance" element={<PagePlaceholder title="Admin Performance Monitoring" />} />
-      <Route path="leave" element={<PagePlaceholder title="Leave Approval Management" />} />
-      <Route path="assignments" element={<PagePlaceholder title="Customer Assignment Oversight" />} />
+      <Route path="customers" element={<BossCustomers />} />
+      <Route path="performance" element={<BossPerformance />} />
+      <Route path="leave" element={<BossLeave />} />
+      <Route path="assignments" element={<BossAssignments />} />
       <Route path="reports" element={<BossReports />} />
-      <Route path="settings" element={<PagePlaceholder title="Biodata & Settings" />} />
+      <Route path="settings" element={<BossSettings />} />
     </Route>
   </Routes>
 );
