@@ -62,6 +62,40 @@ const statusClass = (s?: string | null) =>
     ? "bg-brand/10 text-brand border-brand/20"
     : "bg-muted text-muted-foreground border-border";
 
+interface RecentLog {
+  id: string;
+  module: string | null;
+  action: string | null;
+  description: string | null;
+  performed_by_role: string | null;
+  created_at: string | null;
+}
+
+const useRecentAuditLogs = (limit = 5) => {
+  const [logs, setLogs] = useState<RecentLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("activity_logs")
+        .select("id, module, action, description, performed_by_role, created_at")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (cancelled) return;
+      if (error) setError(error.message);
+      else setLogs((data ?? []) as RecentLog[]);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [limit]);
+
+  return { logs, loading, error };
+};
+
 const Overview = () => {
   const { counts, loading: statsLoading, error: statsError } = useDashboardStats([
     {
