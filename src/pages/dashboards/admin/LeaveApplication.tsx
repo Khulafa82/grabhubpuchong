@@ -87,7 +87,7 @@ const LeaveApplication = () => {
       start_date: startDate,
       end_date: endDate,
       reason: reason.trim(),
-      leave_status: "pending",
+      leave_status: "submitted",
       handover_required: handoverRequired,
       handover_completed: false,
     });
