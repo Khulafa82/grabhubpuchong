@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, PlayCircle, X } from "lucide-react";
+import { CheckCircle2, Loader2, PlayCircle, X, Check, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import HandoverWizard, { LeaveRow } from "./HandoverWizard";
 
 interface EnrichedLeave extends LeaveRow {
