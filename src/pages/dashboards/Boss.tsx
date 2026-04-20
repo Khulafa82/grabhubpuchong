@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useBossOverview } from "@/hooks/useBossOverview";
 import { statusBadgeClass } from "@/lib/customers";
+import BossReports from "./boss/Reports";
 
 const items = [
   { label: "Dashboard Overview", to: "/boss", icon: LayoutDashboard },
@@ -248,7 +249,7 @@ const Boss = () => (
       <Route path="performance" element={<PagePlaceholder title="Admin Performance Monitoring" />} />
       <Route path="leave" element={<PagePlaceholder title="Leave Approval Management" />} />
       <Route path="assignments" element={<PagePlaceholder title="Customer Assignment Oversight" />} />
-      <Route path="reports" element={<PagePlaceholder title="Reports & Analytics" />} />
+      <Route path="reports" element={<BossReports />} />
       <Route path="settings" element={<PagePlaceholder title="Biodata & Settings" />} />
     </Route>
   </Routes>
