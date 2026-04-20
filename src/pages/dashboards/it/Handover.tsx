@@ -15,11 +15,14 @@ interface EnrichedLeave extends LeaveRow {
 }
 
 const Handover = () => {
+  const { user } = useAuth();
   const [rows, setRows] = useState<EnrichedLeave[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeLeave, setActiveLeave] = useState<LeaveRow | null>(null);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: "done" | "delete"; leave: EnrichedLeave } | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
 
   const load = async () => {
     setLoading(true);
