@@ -1,7 +1,7 @@
 import { Routes, Route, NavLink as RouterNavLink } from "react-router-dom";
 import {
   LayoutDashboard, Users, UserCheck, Phone, CalendarOff, Calendar, Settings,
-  Clock, MessageCircle, AlertCircle, CheckCircle2, Loader2,
+  Clock, MessageCircle, AlertCircle, CheckCircle2, Loader2, CalendarClock, ClipboardList,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useCustomers } from "@/hooks/useCustomers";
 import { CustomerTable } from "@/components/admin/CustomerTable";
 import { AllCustomersTable } from "@/components/admin/AllCustomersTable";
+import { MyCustomersTable } from "@/components/admin/MyCustomersTable";
 import { CustomerActionsDialog } from "@/components/admin/CustomerActionsDialog";
 import { Customer, isOverdue, isToday, telLink, waLink, statusBadgeClass } from "@/lib/customers";
 import { supabase } from "@/lib/supabase";
@@ -155,44 +156,46 @@ const MyCustomersPage = () => {
   const { data, loading, error, refetch } = useCustomers({ adminId: myId, scope: "mine" });
   const [active, setActive] = useState<Customer | null>(null);
 
-  const markContacted = async (c: Customer) => {
-    const { error: err } = await supabase
-      .from("customers")
-      .update({ customer_status: "contacted" })
-      .eq("id", c.id);
-    if (err) toast.error(err.message);
-    else {
-      toast.success("Marked as contacted");
-      refetch();
-    }
-  };
+  const stats = useMemo(() => {
+    const today = data.filter((c) => isToday(c.next_follow_up_date)).length;
+    const overdue = data.filter((c) => isOverdue(c.next_follow_up_date)).length;
+    const urgent = data.filter((c) => c.priority_status === "urgent" || c.priority_status === "walk_in").length;
+    const completed = data.filter((c) => c.customer_status === "completed").length;
+    const pending = data.filter((c) =>
+      ["new", "contacted", "pending_documents", "waiting_customer_response", "psv_required", "under_review"].includes(c.customer_status ?? "new"),
+    ).length;
+    return { total: data.length, today, overdue, urgent, completed, pending };
+  }, [data]);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-charcoal">My customers</h1>
-          <p className="text-sm text-muted-foreground">Customers assigned to you. {data.length} total.</p>
+          <h1 className="text-2xl font-bold text-charcoal">My customer data</h1>
+          <p className="text-sm text-muted-foreground">
+            Your active CRM workspace · {stats.total} assigned customers.
+          </p>
         </div>
         <Button variant="outline" onClick={refetch} disabled={loading}>Refresh</Button>
       </div>
-      <CustomerTable
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard label="Total" value={loading ? "…" : stats.total} icon={Users} />
+        <StatCard label="Due today" value={loading ? "…" : stats.today} icon={Clock} accent="charcoal" />
+        <StatCard label="Overdue" value={loading ? "…" : stats.overdue} icon={AlertCircle} accent="muted" />
+        <StatCard label="Urgent / walk-in" value={loading ? "…" : stats.urgent} icon={CalendarClock} />
+        <StatCard label="Pending" value={loading ? "…" : stats.pending} icon={ClipboardList} accent="muted" />
+        <StatCard label="Completed" value={loading ? "…" : stats.completed} icon={CheckCircle2} />
+      </div>
+
+      <MyCustomersTable
         rows={data}
         loading={loading}
         error={error}
-        canEdit={() => true}
         onEdit={setActive}
-        empty="No customers are currently assigned to you."
+        refetch={refetch}
       />
-      {data.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {data.slice(0, 5).map((c) => (
-            <Button key={c.id} size="sm" variant="outline" onClick={() => markContacted(c)}>
-              <CheckCircle2 className="w-3 h-3 mr-1" /> Mark {c.full_name?.split(" ")[0]} contacted
-            </Button>
-          ))}
-        </div>
-      )}
+
       <CustomerActionsDialog
         key={active?.id ?? "none"}
         customer={active}
