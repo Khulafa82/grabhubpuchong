@@ -86,7 +86,8 @@ const Overview = () => {
     },
   ]);
 
-  const { staff, customers, logs, duplicateCount, loading, error, refetch } = useITTechData();
+  const { staff, customers, duplicateCount, loading, error, refetch } = useITTechData();
+  const { logs: recentLogs, loading: logsLoading, error: logsError } = useRecentAuditLogs(5);
   const [editing, setEditing] = useState<CustomerAssignmentRow | null>(null);
 
   const admins = useMemo(() => staff.filter((s) => s.role === "admin"), [staff]);
