@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useCustomers } from "@/hooks/useCustomers";
 import { CustomerTable } from "@/components/admin/CustomerTable";
+import { AllCustomersTable } from "@/components/admin/AllCustomersTable";
 import { CustomerActionsDialog } from "@/components/admin/CustomerActionsDialog";
 import { Customer, isOverdue, isToday, telLink, waLink, statusBadgeClass } from "@/lib/customers";
 import { supabase } from "@/lib/supabase";
@@ -205,19 +206,35 @@ const MyCustomersPage = () => {
 
 const AllCustomersPage = () => {
   const myId = useMyId();
-  const { data, loading, error } = useCustomers({ scope: "all" });
+  const { data, loading, error, refetch } = useCustomers({ scope: "all" });
+  const [active, setActive] = useState<Customer | null>(null);
+  const mineCount = useMemo(() => data.filter((c) => c.admin_in_charge === myId).length, [data, myId]);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-charcoal">All customers</h1>
-        <p className="text-sm text-muted-foreground">Read-only view. You can only edit customers assigned to you.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-charcoal">All customer data</h1>
+          <p className="text-sm text-muted-foreground">
+            CRM workspace · {data.length} records · {mineCount} assigned to you · others are read-only.
+          </p>
+        </div>
+        <Button variant="outline" onClick={refetch} disabled={loading}>Refresh</Button>
       </div>
-      <CustomerTable
+      <AllCustomersTable
         rows={data}
         loading={loading}
         error={error}
-        canEdit={(c) => c.admin_in_charge === myId}
-        empty="No customers in the system yet."
+        myId={myId}
+        onEdit={setActive}
+        refetch={refetch}
+      />
+      <CustomerActionsDialog
+        key={active?.id ?? "none"}
+        customer={active}
+        open={!!active}
+        onOpenChange={(o) => !o && setActive(null)}
+        onSaved={refetch}
       />
     </div>
   );
