@@ -27,11 +27,23 @@ const LEAVE_TYPES = ["annual", "emergency", "medical"];
 
 const statusBadge = (s?: string | null) => {
   switch (s) {
-    case "approved": return "bg-brand/10 text-brand border-brand/20";
+    case "approved":
+    case "completed": return "bg-brand/10 text-brand border-brand/20";
     case "rejected": return "bg-destructive/10 text-destructive border-destructive/20";
-    case "pending":
+    case "cancelled": return "bg-muted text-muted-foreground border-border";
     case "submitted": return "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20";
     default: return "bg-muted text-muted-foreground border-border";
+  }
+};
+
+const statusLabel = (s?: string | null) => {
+  switch (s) {
+    case "submitted": return "Waiting for boss approval";
+    case "approved": return "Approved";
+    case "rejected": return "Rejected";
+    case "cancelled": return "Cancelled";
+    case "completed": return "Completed";
+    default: return s ?? "—";
   }
 };
 
@@ -87,7 +99,7 @@ const LeaveApplication = () => {
       start_date: startDate,
       end_date: endDate,
       reason: reason.trim(),
-      leave_status: "pending",
+      leave_status: "submitted",
       handover_required: handoverRequired,
       handover_completed: false,
     });
@@ -179,7 +191,7 @@ const LeaveApplication = () => {
                     <td className="py-2.5 px-4 text-muted-foreground">{r.start_date ?? "—"}</td>
                     <td className="py-2.5 px-4 text-muted-foreground">{r.end_date ?? "—"}</td>
                     <td className="py-2.5 px-4 text-muted-foreground">{daysBetween(r.start_date, r.end_date)}</td>
-                    <td className="py-2.5 px-4"><Badge variant="outline" className={statusBadge(r.leave_status)}>{r.leave_status ?? "—"}</Badge></td>
+                    <td className="py-2.5 px-4"><Badge variant="outline" className={statusBadge(r.leave_status)}>{statusLabel(r.leave_status)}</Badge></td>
                     <td className="py-2.5 px-4">{r.handover_required ? <Badge variant="outline" className="bg-charcoal/10 text-charcoal border-charcoal/20">Yes</Badge> : <span className="text-muted-foreground">No</span>}</td>
                     <td className="py-2.5 px-4">{r.handover_completed ? <Badge variant="outline" className="bg-brand/10 text-brand border-brand/20">Done</Badge> : <span className="text-muted-foreground">—</span>}</td>
                     <td className="py-2.5 px-4 text-muted-foreground">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}</td>
