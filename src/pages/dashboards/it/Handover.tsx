@@ -101,7 +101,7 @@ const Handover = () => {
       return <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">Rejected</Badge>;
     }
     if (l.handover_completed) {
-      return <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Completed</Badge>;
+      return <Badge variant="outline" className="bg-brand/10 text-brand border-brand/20">Completed</Badge>;
     }
     if (l.handover_required) {
       return <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">Required</Badge>;
@@ -198,12 +198,12 @@ const Handover = () => {
       </div>
 
       {successBanner && (
-        <div className="flex items-start justify-between gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700">
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-brand/30 bg-brand/10 px-4 py-3 text-sm text-brand">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4" />
             <span className="font-medium">{successBanner}</span>
           </div>
-          <button onClick={() => setSuccessBanner(null)} className="text-emerald-700/70 hover:text-emerald-700">
+          <button onClick={() => setSuccessBanner(null)} className="text-brand/70 hover:text-brand">
             <X className="w-4 h-4" />
           </button>
         </div>
