@@ -1,5 +1,5 @@
-import { Routes, Route } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { Routes, Route, Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, UserCog, Activity, Shuffle, ClipboardCheck, Copy, ScrollText,
   ShieldAlert, Settings, AlertTriangle, Users, Lock, Loader2, RefreshCw,
@@ -62,6 +62,40 @@ const statusClass = (s?: string | null) =>
     ? "bg-brand/10 text-brand border-brand/20"
     : "bg-muted text-muted-foreground border-border";
 
+interface RecentLog {
+  id: string;
+  module: string | null;
+  action: string | null;
+  description: string | null;
+  performed_by_role: string | null;
+  created_at: string | null;
+}
+
+const useRecentAuditLogs = (limit = 5) => {
+  const [logs, setLogs] = useState<RecentLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("activity_logs")
+        .select("id, module, action, description, performed_by_role, created_at")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (cancelled) return;
+      if (error) setError(error.message);
+      else setLogs((data ?? []) as RecentLog[]);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [limit]);
+
+  return { logs, loading, error };
+};
+
 const Overview = () => {
   const { counts, loading: statsLoading, error: statsError } = useDashboardStats([
     {
@@ -86,7 +120,8 @@ const Overview = () => {
     },
   ]);
 
-  const { staff, customers, logs, duplicateCount, loading, error, refetch } = useITTechData();
+  const { staff, customers, duplicateCount, loading, error, refetch } = useITTechData();
+  const { logs: recentLogs, loading: logsLoading, error: logsError } = useRecentAuditLogs(5);
   const [editing, setEditing] = useState<CustomerAssignmentRow | null>(null);
 
   const admins = useMemo(() => staff.filter((s) => s.role === "admin"), [staff]);
@@ -259,26 +294,36 @@ const Overview = () => {
 
       {/* Audit Logs */}
       <Card className="p-6">
-        <h3 className="font-semibold text-charcoal mb-4">Recent activity & audit trail</h3>
-        {loading ? (
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-charcoal">Recent activity & audit trail</h3>
+          <Link to="/it-tech/audit" className="text-xs text-brand hover:underline">View all</Link>
+        </div>
+        {logsLoading ? (
           <div className="py-6 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-brand" /></div>
-        ) : logs.length === 0 ? (
+        ) : logsError ? (
+          <div className="text-sm text-destructive">Failed to load: {logsError}</div>
+        ) : recentLogs.length === 0 ? (
           <div className="text-sm text-muted-foreground">No activity logs available.</div>
         ) : (
           <ul className="divide-y divide-border">
-            {logs.map((l) => (
-              <li key={l.id} className="py-3 flex items-center justify-between gap-3 flex-wrap">
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-charcoal">
-                    {l.action_type ?? "action"}{" "}
-                    <span className="text-muted-foreground font-normal">
-                      · {l.target_table ?? "—"}
-                    </span>
+            {recentLogs.map((l) => (
+              <li key={l.id} className="py-3 flex items-start justify-between gap-3 flex-wrap">
+                <div className="min-w-0 space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="bg-brand/10 text-brand border-brand/20">
+                      {l.module ?? "system"}
+                    </Badge>
+                    <span className="text-sm font-medium text-charcoal">{l.action ?? "action"}</span>
+                    {l.performed_by_role && (
+                      <span className="text-xs text-muted-foreground">({l.performed_by_role})</span>
+                    )}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    by {l.performed_by_name ?? l.performed_by ?? "system"} ·{" "}
-                    {l.created_at ? new Date(l.created_at).toLocaleString() : "—"}
-                  </div>
+                  {l.description && (
+                    <div className="text-xs text-muted-foreground">{l.description}</div>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground whitespace-nowrap">
+                  {l.created_at ? new Date(l.created_at).toLocaleString() : "—"}
                 </div>
               </li>
             ))}
