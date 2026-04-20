@@ -27,11 +27,23 @@ const LEAVE_TYPES = ["annual", "emergency", "medical"];
 
 const statusBadge = (s?: string | null) => {
   switch (s) {
-    case "approved": return "bg-brand/10 text-brand border-brand/20";
+    case "approved":
+    case "completed": return "bg-brand/10 text-brand border-brand/20";
     case "rejected": return "bg-destructive/10 text-destructive border-destructive/20";
-    case "pending":
+    case "cancelled": return "bg-muted text-muted-foreground border-border";
     case "submitted": return "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20";
     default: return "bg-muted text-muted-foreground border-border";
+  }
+};
+
+const statusLabel = (s?: string | null) => {
+  switch (s) {
+    case "submitted": return "Waiting for boss approval";
+    case "approved": return "Approved";
+    case "rejected": return "Rejected";
+    case "cancelled": return "Cancelled";
+    case "completed": return "Completed";
+    default: return s ?? "—";
   }
 };
 
