@@ -105,15 +105,37 @@ const Handover = () => {
   const runConfirmedAction = async () => {
     if (!confirmAction) return;
     const { type, leave } = confirmAction;
+    if (!leave?.id) {
+      toast.error("Missing leave id — cannot perform action.");
+      return;
+    }
     setActionBusy(true);
     try {
       if (type === "done") {
-        const { error: updErr } = await supabase
+        console.log("[Handover] Mark done → leave id:", leave.id);
+        const { data: updRows, error: updErr } = await supabase
           .from("leave_applications")
           .update({ handover_completed: true })
-          .eq("id", leave.id);
+          .eq("id", leave.id)
+          .select("id, handover_completed");
+        console.log("[Handover] update response:", { updRows, updErr });
         if (updErr) throw updErr;
-        // Best-effort audit log
+        if (!updRows || updRows.length === 0) {
+          throw new Error(
+            "Update did not affect any row. A Row-Level Security policy is likely blocking updates on leave_applications for the IT Tech role."
+          );
+        }
+        // Verify the change actually persisted
+        const { data: verify, error: verifyErr } = await supabase
+          .from("leave_applications")
+          .select("id, handover_completed")
+          .eq("id", leave.id)
+          .maybeSingle();
+        console.log("[Handover] verify after update:", { verify, verifyErr });
+        if (verifyErr) throw verifyErr;
+        if (!verify || verify.handover_completed !== true) {
+          throw new Error("Update did not persist. Check RLS policies on leave_applications.");
+        }
         if (user) {
           await supabase.from("activity_logs").insert({
             module: "leave_handover",
@@ -127,11 +149,19 @@ const Handover = () => {
         setSuccessBanner("Handover marked as done.");
         window.setTimeout(() => setSuccessBanner(null), 6000);
       } else {
-        const { error: delErr } = await supabase
+        console.log("[Handover] Delete → leave id:", leave.id);
+        const { data: delRows, error: delErr } = await supabase
           .from("leave_applications")
           .delete()
-          .eq("id", leave.id);
+          .eq("id", leave.id)
+          .select("id");
+        console.log("[Handover] delete response:", { delRows, delErr });
         if (delErr) throw delErr;
+        if (!delRows || delRows.length === 0) {
+          throw new Error(
+            "Delete did not remove any row. RLS may be blocking deletes on leave_applications."
+          );
+        }
         if (user) {
           await supabase.from("activity_logs").insert({
             module: "leave_handover",
@@ -144,8 +174,9 @@ const Handover = () => {
         toast.success("Leave request deleted.");
       }
       setConfirmAction(null);
-      load();
+      await load();
     } catch (e) {
+      console.error("[Handover] action failed:", e);
       toast.error(e instanceof Error ? e.message : "Action failed");
     } finally {
       setActionBusy(false);
