@@ -305,6 +305,33 @@ const Handover = () => {
           onCompleted={handleCompleted}
         />
       )}
+
+      <AlertDialog open={!!confirmAction} onOpenChange={(v) => !v && !actionBusy && setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.type === "delete" ? "Delete leave request?" : "Mark handover as done?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.type === "delete" ? (
+                <>This will permanently delete the leave request for <span className="font-medium text-charcoal">{confirmAction.leave.staff_name}</span> ({confirmAction.leave.start_date} → {confirmAction.leave.end_date}). This action cannot be undone.</>
+              ) : (
+                <>This marks the handover as completed for <span className="font-medium text-charcoal">{confirmAction?.leave.staff_name}</span> without running the guided wizard. No customers will be reassigned. The record will move to "All other leave records".</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionBusy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); runConfirmedAction(); }}
+              disabled={actionBusy}
+              className={confirmAction?.type === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              {actionBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : confirmAction?.type === "delete" ? "Delete" : "Mark done"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
