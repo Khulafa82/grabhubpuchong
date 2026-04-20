@@ -102,6 +102,56 @@ const Handover = () => {
     window.setTimeout(() => setSuccessBanner(null), 6000);
   };
 
+  const runConfirmedAction = async () => {
+    if (!confirmAction) return;
+    const { type, leave } = confirmAction;
+    setActionBusy(true);
+    try {
+      if (type === "done") {
+        const { error: updErr } = await supabase
+          .from("leave_applications")
+          .update({ handover_completed: true })
+          .eq("id", leave.id);
+        if (updErr) throw updErr;
+        // Best-effort audit log
+        if (user) {
+          await supabase.from("activity_logs").insert({
+            module: "leave_handover",
+            action: "MARK_HANDOVER_DONE",
+            description: `Marked handover done (no reassignment) for ${leave.staff_name ?? leave.staff_id} · leave ${leave.start_date} → ${leave.end_date}`,
+            performed_by: user.id,
+            performed_by_role: "it_tech",
+          }).then(({ error: e }) => { if (e) console.warn("activity_logs insert failed:", e.message); });
+        }
+        toast.success("Handover marked as done.");
+        setSuccessBanner("Handover marked as done.");
+        window.setTimeout(() => setSuccessBanner(null), 6000);
+      } else {
+        const { error: delErr } = await supabase
+          .from("leave_applications")
+          .delete()
+          .eq("id", leave.id);
+        if (delErr) throw delErr;
+        if (user) {
+          await supabase.from("activity_logs").insert({
+            module: "leave_handover",
+            action: "DELETE_LEAVE_REQUEST",
+            description: `Deleted leave request for ${leave.staff_name ?? leave.staff_id} · ${leave.start_date} → ${leave.end_date}`,
+            performed_by: user.id,
+            performed_by_role: "it_tech",
+          }).then(({ error: e }) => { if (e) console.warn("activity_logs insert failed:", e.message); });
+        }
+        toast.success("Leave request deleted.");
+      }
+      setConfirmAction(null);
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Action failed");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
   const handoverBadge = (l: EnrichedLeave) => {
     if (l.leave_status === "rejected") {
       return <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">Rejected</Badge>;
