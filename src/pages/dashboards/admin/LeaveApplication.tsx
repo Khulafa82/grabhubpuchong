@@ -23,7 +23,7 @@ interface Leave {
   created_at: string | null;
 }
 
-const LEAVE_TYPES = ["annual", "emergency", "medical"];
+const LEAVE_TYPES = ["Annual", "Medical", "Emergency", "Unpaid", "Resignation"];
 
 const statusBadge = (s?: string | null) => {
   switch (s) {
@@ -62,7 +62,7 @@ const LeaveApplication = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const [leaveType, setLeaveType] = useState("annual");
+  const [leaveType, setLeaveType] = useState("Annual");
   const [startDate, setStartDate] = useState(todayStr());
   const [endDate, setEndDate] = useState(todayStr());
   const [reason, setReason] = useState("");
@@ -128,7 +128,7 @@ const LeaveApplication = () => {
             <Select value={leaveType} onValueChange={setLeaveType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {LEAVE_TYPES.map((t) => <SelectItem key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</SelectItem>)}
+                {LEAVE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -187,7 +187,7 @@ const LeaveApplication = () => {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id} className="border-b border-border/60">
-                    <td className="py-2.5 px-4 font-medium text-charcoal capitalize">{r.leave_type ?? "—"}</td>
+                    <td className="py-2.5 px-4 font-medium text-charcoal">{r.leave_type ?? "—"}</td>
                     <td className="py-2.5 px-4 text-muted-foreground">{r.start_date ?? "—"}</td>
                     <td className="py-2.5 px-4 text-muted-foreground">{r.end_date ?? "—"}</td>
                     <td className="py-2.5 px-4 text-muted-foreground">{daysBetween(r.start_date, r.end_date)}</td>
