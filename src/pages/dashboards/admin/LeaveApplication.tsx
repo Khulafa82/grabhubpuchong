@@ -187,7 +187,7 @@ const LeaveApplication = () => {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id} className="border-b border-border/60">
-                    <td className="py-2.5 px-4 font-medium text-charcoal capitalize">{r.leave_type ?? "—"}</td>
+                    <td className="py-2.5 px-4 font-medium text-charcoal">{r.leave_type ?? "—"}</td>
                     <td className="py-2.5 px-4 text-muted-foreground">{r.start_date ?? "—"}</td>
                     <td className="py-2.5 px-4 text-muted-foreground">{r.end_date ?? "—"}</td>
                     <td className="py-2.5 px-4 text-muted-foreground">{daysBetween(r.start_date, r.end_date)}</td>
