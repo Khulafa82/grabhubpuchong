@@ -68,7 +68,8 @@ const LeaveApplication = () => {
   const [reason, setReason] = useState("");
 
   const duration = useMemo(() => daysBetween(startDate, endDate), [startDate, endDate]);
-  const handoverRequired = duration > 1;
+  // Default to true on submission; Boss decides final value during approval
+  const handoverRequired = true;
 
   const load = async () => {
     if (!user) return;
