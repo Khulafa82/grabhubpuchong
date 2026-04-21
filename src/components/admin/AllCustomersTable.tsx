@@ -11,11 +11,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Phone, MessageCircle, Loader2, Eye, Search, X, Lock,
+  Loader2, Eye, Search, X, Pencil,
 } from "lucide-react";
 import {
   Customer, statusBadgeClass, priorityBadgeClass, isOverdue, isToday,
-  telLink, waLink, CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
+  CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
 } from "@/lib/customers";
 import { CustomerDetailDrawer } from "./CustomerDetailDrawer";
 
@@ -280,22 +280,25 @@ export const AllCustomersTable = ({
                         className="text-right sticky right-0 bg-card shadow-[-4px_0_8px_-4px_hsl(var(--foreground)/0.06)]"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="outline" onClick={() => setDetails(c)}>
-                            <Eye className="w-3.5 h-3.5 mr-1" /> View
-                          </Button>
-                          <Button asChild size="icon" variant="ghost" title="Call">
-                            <a href={telLink(c.phone_number)}><Phone className="w-4 h-4" /></a>
-                          </Button>
-                          <Button asChild size="icon" variant="ghost" title="WhatsApp">
-                            <a href={waLink(c.phone_number)} target="_blank" rel="noreferrer">
-                              <MessageCircle className="w-4 h-4" />
-                            </a>
-                          </Button>
-                          {!editable && (
-                            <span title="Read-only — not assigned to you" className="inline-flex items-center px-1 text-muted-foreground">
-                              <Lock className="w-3.5 h-3.5" />
-                            </span>
+                        <div className="flex justify-end">
+                          {editable ? (
+                            <Button
+                              size="sm"
+                              className="bg-brand text-brand-foreground hover:bg-brand/90"
+                              onClick={() => setDetails(c)}
+                              title="Open and manage this customer"
+                            >
+                              <Pencil className="w-3.5 h-3.5 mr-1" /> Manage
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setDetails(c)}
+                              title="Read-only — not assigned to you"
+                            >
+                              <Eye className="w-3.5 h-3.5 mr-1" /> View
+                            </Button>
                           )}
                         </div>
                       </TableCell>

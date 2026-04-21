@@ -11,14 +11,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Phone, MessageCircle, Loader2, Eye, Copy, CheckCircle2, Search, X,
+  Loader2, Search, X, Pencil,
 } from "lucide-react";
 import {
   Customer, statusBadgeClass, priorityBadgeClass, isOverdue, isToday,
-  telLink, waLink, CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
+  CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
 } from "@/lib/customers";
-import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
 import { CustomerDetailDrawer } from "./CustomerDetailDrawer";
 
 interface Props {
@@ -96,21 +94,6 @@ export const MyCustomersTable = ({ rows, loading, error, refetch }: Props) => {
     setSearch(""); setPhone(""); setIc("");
     setService("all"); setCategory("all"); setStatus("all"); setPriority("all");
     setFollowState("all"); setFrom(""); setTo(""); setPage(1);
-  };
-
-  const copyPhone = (p?: string | null) => {
-    if (!p) return;
-    navigator.clipboard?.writeText(p);
-    toast.success("Phone copied");
-  };
-
-  const markContacted = async (c: Customer) => {
-    const { error: err } = await supabase
-      .from("customers")
-      .update({ customer_status: "contacted" })
-      .eq("id", c.id);
-    if (err) toast.error(err.message);
-    else { toast.success("Marked as contacted"); refetch(); }
   };
 
   return (
@@ -294,23 +277,14 @@ export const MyCustomersTable = ({ rows, loading, error, refetch }: Props) => {
                         className="text-right sticky right-0 bg-card shadow-[-4px_0_8px_-4px_hsl(var(--foreground)/0.06)]"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="outline" onClick={() => setDetails(c)}>
-                            <Eye className="w-3.5 h-3.5 mr-1" /> View
-                          </Button>
-                          <Button asChild size="icon" variant="ghost" title="Call">
-                            <a href={telLink(c.phone_number)}><Phone className="w-4 h-4" /></a>
-                          </Button>
-                          <Button asChild size="icon" variant="ghost" title="WhatsApp">
-                            <a href={waLink(c.phone_number)} target="_blank" rel="noreferrer">
-                              <MessageCircle className="w-4 h-4" />
-                            </a>
-                          </Button>
-                          <Button size="icon" variant="ghost" title="Copy phone" onClick={() => copyPhone(c.phone_number)}>
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" title="Mark as contacted" onClick={() => markContacted(c)}>
-                            <CheckCircle2 className="w-4 h-4" />
+                        <div className="flex justify-end">
+                          <Button
+                            size="sm"
+                            className="bg-brand text-brand-foreground hover:bg-brand/90"
+                            onClick={() => setDetails(c)}
+                            title="Open and manage this customer"
+                          >
+                            <Pencil className="w-3.5 h-3.5 mr-1" /> Manage
                           </Button>
                         </div>
                       </TableCell>
