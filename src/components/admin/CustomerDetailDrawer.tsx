@@ -6,67 +6,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  Phone, MessageCircle, Copy, CheckCircle2, Lock, Loader2, Save, AlertTriangle,
+  Phone, MessageCircle, Copy, Lock, Loader2, Save, AlertTriangle, Pencil,
 } from "lucide-react";
 import {
-  Customer, CUSTOMER_STATUS_OPTIONS, statusBadgeClass, priorityBadgeClass,
-  telLink, waLink,
+  Customer, CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
+  statusBadgeClass, priorityBadgeClass, telLink, waLink,
 } from "@/lib/customers";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import {
+  EFText, EFTextarea, EFSelect, EFBool,
+} from "./customer-detail/EditableField";
 
 interface Props {
   customer: Customer | null;
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  /** True only when current auth.uid() === customer.admin_in_charge */
   editable: boolean;
   onSaved: () => void;
 }
-
-const fmtDate = (v?: string | null) => (v ? new Date(v).toLocaleDateString() : "—");
-const fmtDateTime = (v?: string | null) => (v ? new Date(v).toLocaleString() : "—");
-const dash = (v?: string | number | null) =>
-  v === null || v === undefined || v === "" ? "—" : String(v);
-
-const Field = ({
-  label, value, mono, capitalize = true,
-}: { label: string; value?: React.ReactNode; mono?: boolean; capitalize?: boolean }) => (
-  <div className="min-w-0">
-    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
-    <div
-      className={`mt-0.5 text-sm text-charcoal break-words ${mono ? "font-mono" : ""} ${
-        capitalize ? "first-letter:uppercase" : ""
-      }`}
-    >
-      {typeof value === "string" || typeof value === "number"
-        ? String(value).replace(/_/g, " ")
-        : value ?? "—"}
-    </div>
-  </div>
-);
-
-const YesNo = ({ value }: { value?: boolean | null }) => {
-  if (value === null || value === undefined) return <span className="text-muted-foreground">—</span>;
-  return (
-    <Badge
-      variant="outline"
-      className={
-        value
-          ? "bg-brand/10 text-brand border-brand/20"
-          : "bg-muted text-muted-foreground border-border"
-      }
-    >
-      {value ? "Yes" : "No"}
-    </Badge>
-  );
-};
 
 const SectionCard = ({
   title, children,
@@ -77,28 +37,129 @@ const SectionCard = ({
   </Card>
 );
 
+/* All editable string-ish keys in public.customers we expose to admins */
+type FormState = {
+  full_name: string;
+  ic_number: string;
+  email_address: string;
+  phone_number: string;
+  user_role: string;
+  location_choice: string;
+  state: string;
+  account_status: string;
+  blue_ic_status: boolean | null;
+  license_type: string;
+  criminal_record_status: string;
+  eligibility_status: string;
+  psv_license_status: string;
+  has_car: boolean | null;
+  car_model: string;
+  car_year: string;
+  has_motorcycle: boolean | null;
+  motorcycle_details: string;
+  vehicle_type: string;
+  vehicle_model: string;
+  vehicle_manufacturer: string;
+  insurance_status: string;
+  insurance_name: string;
+  insurance_expired_date: string;
+  insurance_notes: string;
+  psv_class_id: string;
+  psv_class: string;
+  psv_class_date: string;
+  psv_class_location: string;
+  bolt_url: string;
+  remarks: string;
+  customer_status: string;
+  priority_status: string;
+  next_follow_up_date: string;
+  next_follow_up_time: string;
+  walk_in_flag: boolean | null;
+  duplicate_flag: boolean | null;
+  duplicate_reason: string;
+};
+
+const toForm = (c: Customer): FormState => ({
+  full_name: c.full_name ?? "",
+  ic_number: c.ic_number ?? "",
+  email_address: c.email_address ?? "",
+  phone_number: c.phone_number ?? "",
+  user_role: c.user_role ?? "",
+  location_choice: c.location_choice ?? "",
+  state: c.state ?? "",
+  account_status: c.account_status ?? "",
+  blue_ic_status: c.blue_ic_status ?? null,
+  license_type: c.license_type ?? "",
+  criminal_record_status: c.criminal_record_status ?? "",
+  eligibility_status: c.eligibility_status ?? "",
+  psv_license_status: c.psv_license_status ?? "",
+  has_car: c.has_car ?? null,
+  car_model: c.car_model ?? "",
+  car_year: c.car_year != null ? String(c.car_year) : "",
+  has_motorcycle: c.has_motorcycle ?? null,
+  motorcycle_details: c.motorcycle_details ?? "",
+  vehicle_type: c.vehicle_type ?? "",
+  vehicle_model: c.vehicle_model ?? "",
+  vehicle_manufacturer: c.vehicle_manufacturer ?? "",
+  insurance_status: c.insurance_status ?? "",
+  insurance_name: c.insurance_name ?? "",
+  insurance_expired_date: c.insurance_expired_date?.slice(0, 10) ?? "",
+  insurance_notes: c.insurance_notes ?? "",
+  psv_class_id: c.psv_class_id ?? "",
+  psv_class: c.psv_class ?? "",
+  psv_class_date: c.psv_class_date?.slice(0, 10) ?? "",
+  psv_class_location: c.psv_class_location ?? "",
+  bolt_url: c.bolt_url ?? "",
+  remarks: c.remarks ?? "",
+  customer_status: c.customer_status ?? "",
+  priority_status: c.priority_status ?? "",
+  next_follow_up_date: c.next_follow_up_date?.slice(0, 10) ?? "",
+  next_follow_up_time: c.next_follow_up_time ?? "",
+  walk_in_flag: c.walk_in_flag ?? null,
+  duplicate_flag: c.duplicate_flag ?? null,
+  duplicate_reason: c.duplicate_reason ?? "",
+});
+
+const USER_ROLE_OPTIONS = ["GrabCar", "GrabFood", "GrabExpress", "Bolt"];
+const ACCOUNT_STATUS_OPTIONS = ["new", "active", "suspended", "closed"];
+const ELIGIBILITY_OPTIONS = ["eligible", "not_eligible", "pending_review"];
+const LICENSE_TYPE_OPTIONS = ["B", "B2", "D", "DA", "E", "E1", "E2", "GDL"];
+const CRIMINAL_RECORD_OPTIONS = ["clean", "minor", "major", "pending_check"];
+const PSV_LICENSE_OPTIONS = ["have", "dont_have", "in_progress", "expired"];
+const INSURANCE_STATUS_OPTIONS = ["active", "expired", "pending", "none"];
+
 export const CustomerDetailDrawer = ({
   customer, open, onOpenChange, editable, onSaved,
 }: Props) => {
-  const [status, setStatus] = useState("");
-  const [remarks, setRemarks] = useState("");
-  const [followDate, setFollowDate] = useState("");
-  const [followTime, setFollowTime] = useState("");
+  const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (customer) {
-      setStatus(customer.customer_status ?? "");
-      setRemarks(customer.remarks ?? "");
-      setFollowDate(customer.next_follow_up_date?.slice(0, 10) ?? "");
-      setFollowTime(customer.next_follow_up_time ?? "");
+      setForm(toForm(customer));
+      // Debug ownership decision
+      // eslint-disable-next-line no-console
+      console.debug("[CustomerDetailDrawer] customer:", customer.id,
+        "admin_in_charge:", customer.admin_in_charge,
+        "editable:", editable);
+    } else {
+      setForm(null);
     }
-  }, [customer]);
+  }, [customer, editable]);
 
-  const isGrabCar = useMemo(() => (customer?.user_role ?? "").toLowerCase() === "grabcar", [customer]);
-  const isGrabFood = useMemo(() => (customer?.user_role ?? "").toLowerCase() === "grabfood", [customer]);
+  const isGrabCar = useMemo(
+    () => (form?.user_role ?? customer?.user_role ?? "").toLowerCase() === "grabcar",
+    [form, customer],
+  );
+  const isGrabFood = useMemo(
+    () => (form?.user_role ?? customer?.user_role ?? "").toLowerCase() === "grabfood",
+    [form, customer],
+  );
 
-  if (!customer) return null;
+  if (!customer || !form) return null;
+
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+    setForm((f) => (f ? { ...f, [key]: value } : f));
 
   const copyPhone = () => {
     if (!customer.phone_number) return;
@@ -106,30 +167,61 @@ export const CustomerDetailDrawer = ({
     toast.success("Phone copied");
   };
 
-  const markContacted = async () => {
-    setSaving(true);
-    const { error } = await supabase
-      .from("customers")
-      .update({ customer_status: "contacted" })
-      .eq("id", customer.id);
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    setStatus("contacted");
-    toast.success("Marked as contacted");
-    onSaved();
-  };
-
   const save = async () => {
+    if (!editable) return;
     setSaving(true);
     const payload: Record<string, unknown> = {
-      remarks: remarks || null,
-      next_follow_up_date: followDate || null,
-      next_follow_up_time: followTime || null,
+      full_name: form.full_name || null,
+      ic_number: form.ic_number || null,
+      email_address: form.email_address || null,
+      phone_number: form.phone_number || null,
+      user_role: form.user_role || null,
+      location_choice: form.location_choice || null,
+      state: form.state || null,
+      account_status: form.account_status || null,
+      blue_ic_status: form.blue_ic_status,
+      license_type: form.license_type || null,
+      criminal_record_status: form.criminal_record_status || null,
+      eligibility_status: form.eligibility_status || null,
+      psv_license_status: form.psv_license_status || null,
+      has_car: form.has_car,
+      car_model: form.car_model || null,
+      car_year: form.car_year ? Number(form.car_year) || null : null,
+      has_motorcycle: form.has_motorcycle,
+      motorcycle_details: form.motorcycle_details || null,
+      vehicle_type: form.vehicle_type || null,
+      vehicle_model: form.vehicle_model || null,
+      vehicle_manufacturer: form.vehicle_manufacturer || null,
+      insurance_status: form.insurance_status || null,
+      insurance_name: form.insurance_name || null,
+      insurance_expired_date: form.insurance_expired_date || null,
+      insurance_notes: form.insurance_notes || null,
+      psv_class_id: form.psv_class_id || null,
+      psv_class: form.psv_class || null,
+      psv_class_date: form.psv_class_date || null,
+      psv_class_location: form.psv_class_location || null,
+      bolt_url: form.bolt_url || null,
+      remarks: form.remarks || null,
+      customer_status: form.customer_status || null,
+      priority_status: form.priority_status || null,
+      next_follow_up_date: form.next_follow_up_date || null,
+      next_follow_up_time: form.next_follow_up_time || null,
+      walk_in_flag: form.walk_in_flag,
+      duplicate_flag: form.duplicate_flag,
+      duplicate_reason: form.duplicate_reason || null,
     };
-    if (status) payload.customer_status = status;
-    const { error } = await supabase.from("customers").update(payload).eq("id", customer.id);
+
+    const { error } = await supabase
+      .from("customers")
+      .update(payload)
+      .eq("id", customer.id);
     setSaving(false);
-    if (error) return toast.error(error.message || "Failed to update");
+
+    if (error) {
+      console.error("[CustomerDetailDrawer] update failed:", error);
+      toast.error(error.message || "Failed to update customer");
+      return;
+    }
     toast.success("Customer updated");
     onSaved();
   };
@@ -152,7 +244,11 @@ export const CustomerDetailDrawer = ({
                   {customer.applicant_id ?? "—"} · {customer.phone_number ?? "—"}
                 </SheetDescription>
               </div>
-              {!editable && (
+              {editable ? (
+                <Badge variant="outline" className="bg-brand/10 text-brand border-brand/20 shrink-0">
+                  <Pencil className="w-3 h-3 mr-1" /> Editable
+                </Badge>
+              ) : (
                 <Badge variant="outline" className="bg-muted text-muted-foreground shrink-0">
                   <Lock className="w-3 h-3 mr-1" /> Read-only
                 </Badge>
@@ -170,11 +266,6 @@ export const CustomerDetailDrawer = ({
               <Badge variant="outline" className={priorityBadgeClass(customer.priority_status)}>
                 {(customer.priority_status ?? "normal").replace(/_/g, " ")}
               </Badge>
-              {customer.account_status && (
-                <Badge variant="outline" className="bg-muted text-muted-foreground">
-                  {customer.account_status}
-                </Badge>
-              )}
               {customer.duplicate_flag && (
                 <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
                   <AlertTriangle className="w-3 h-3 mr-1" /> duplicate
@@ -182,7 +273,7 @@ export const CustomerDetailDrawer = ({
               )}
             </div>
 
-            {/* Quick actions */}
+            {/* Quick actions (always shown) */}
             <div className="flex flex-wrap gap-2 pt-2">
               <Button asChild size="sm" variant="outline">
                 <a href={telLink(customer.phone_number)}>
@@ -198,8 +289,14 @@ export const CustomerDetailDrawer = ({
                 <Copy className="w-3.5 h-3.5 mr-1" /> Copy phone
               </Button>
               {editable && (
-                <Button size="sm" variant="outline" onClick={markContacted} disabled={saving}>
-                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Mark contacted
+                <Button
+                  size="sm"
+                  className="bg-brand text-brand-foreground hover:bg-brand/90 ml-auto"
+                  onClick={save}
+                  disabled={saving}
+                >
+                  {saving ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-1" />}
+                  Save
                 </Button>
               )}
             </div>
@@ -218,127 +315,188 @@ export const CustomerDetailDrawer = ({
 
             {/* OVERVIEW */}
             <TabsContent value="overview" className="space-y-4">
-              <SectionCard title="Registration summary">
-                <Field label="Applicant ID" value={customer.applicant_id} mono capitalize={false} />
-                <Field label="Registration date" value={fmtDate(customer.registration_date ?? customer.created_at)} />
-                <Field label="Last edited at" value={fmtDateTime(customer.updated_at)} />
-                <Field
-                  label="Assigned admin"
-                  value={
-                    editable
-                      ? <Badge variant="outline" className="bg-brand/10 text-brand border-brand/20">You</Badge>
-                      : customer.assigned_admin_name ?? <span className="text-muted-foreground italic">Unassigned</span>
-                  }
-                />
-                <Field label="Assignment status" value={customer.assignment_status} />
-                <Field
+              <SectionCard title="Workflow status">
+                <EFSelect
                   label="Customer status"
-                  value={
-                    <Badge variant="outline" className={statusBadgeClass(customer.customer_status)}>
-                      {(customer.customer_status ?? "new").replace(/_/g, " ")}
-                    </Badge>
-                  }
+                  editable={editable}
+                  value={form.customer_status}
+                  onChange={(v) => set("customer_status", v)}
+                  options={CUSTOMER_STATUS_OPTIONS}
                 />
-                <Field
+                <EFSelect
                   label="Priority status"
-                  value={
-                    <Badge variant="outline" className={priorityBadgeClass(customer.priority_status)}>
-                      {(customer.priority_status ?? "normal").replace(/_/g, " ")}
-                    </Badge>
-                  }
+                  editable={editable}
+                  value={form.priority_status}
+                  onChange={(v) => set("priority_status", v)}
+                  options={PRIORITY_OPTIONS}
                 />
-                <Field label="Walk-in" value={<YesNo value={customer.walk_in_flag ?? customer.priority_status === "walk_in"} />} />
-                <Field label="Duplicate" value={<YesNo value={customer.duplicate_flag} />} />
-                {customer.duplicate_flag && (
-                  <div className="sm:col-span-2">
-                    <Field label="Duplicate reason" value={customer.duplicate_reason} />
-                  </div>
-                )}
+                <EFBool
+                  label="Walk-in"
+                  editable={editable}
+                  value={form.walk_in_flag}
+                  onChange={(v) => set("walk_in_flag", v)}
+                />
+                <EFBool
+                  label="Duplicate"
+                  editable={editable}
+                  value={form.duplicate_flag}
+                  onChange={(v) => set("duplicate_flag", v)}
+                />
+                <div className="sm:col-span-2">
+                  <EFTextarea
+                    label="Duplicate reason"
+                    editable={editable}
+                    value={form.duplicate_reason}
+                    onChange={(v) => set("duplicate_reason", v)}
+                    rows={2}
+                  />
+                </div>
+              </SectionCard>
+
+              <SectionCard title="Registration summary">
+                <EFText
+                  label="Applicant ID"
+                  editable={false}
+                  value={customer.applicant_id}
+                  onChange={() => {}}
+                  mono
+                  capitalize={false}
+                />
+                <EFText
+                  label="Registration date"
+                  editable={false}
+                  value={
+                    customer.registration_date
+                      ? new Date(customer.registration_date).toLocaleDateString()
+                      : customer.created_at
+                        ? new Date(customer.created_at).toLocaleDateString()
+                        : ""
+                  }
+                  onChange={() => {}}
+                />
+                <EFText
+                  label="Last edited at"
+                  editable={false}
+                  value={customer.updated_at ? new Date(customer.updated_at).toLocaleString() : ""}
+                  onChange={() => {}}
+                />
+                <EFText
+                  label="Assigned admin"
+                  editable={false}
+                  value={editable ? "You" : (customer.assigned_admin_name ?? "Unassigned")}
+                  onChange={() => {}}
+                />
               </SectionCard>
             </TabsContent>
 
             {/* PERSONAL */}
             <TabsContent value="personal" className="space-y-4">
               <SectionCard title="Personal information">
-                <Field label="Full name" value={customer.full_name} />
-                <Field label="IC number" value={customer.ic_number} mono capitalize={false} />
-                <Field label="Email address" value={customer.email_address} capitalize={false} />
-                <Field label="Phone number" value={customer.phone_number} mono capitalize={false} />
-                <Field label="State" value={customer.state} />
-                <Field label="Location choice" value={customer.location_choice} />
+                <EFText label="Full name" editable={editable} value={form.full_name} onChange={(v) => set("full_name", v)} />
+                <EFText label="IC number" editable={editable} value={form.ic_number} onChange={(v) => set("ic_number", v)} mono capitalize={false} />
+                <EFText label="Email address" editable={editable} value={form.email_address} onChange={(v) => set("email_address", v)} type="email" capitalize={false} />
+                <EFText label="Phone number" editable={editable} value={form.phone_number} onChange={(v) => set("phone_number", v)} type="tel" mono capitalize={false} />
+                <EFText label="State" editable={editable} value={form.state} onChange={(v) => set("state", v)} />
+                <EFText label="Location choice" editable={editable} value={form.location_choice} onChange={(v) => set("location_choice", v)} />
               </SectionCard>
             </TabsContent>
 
             {/* APPLICATION */}
             <TabsContent value="application" className="space-y-4">
               <SectionCard title="Application information">
-                <Field
+                <EFSelect
                   label="Service / user role"
-                  value={
-                    customer.user_role
-                      ? <Badge variant="outline" className="bg-charcoal/5 text-charcoal border-charcoal/20">{customer.user_role}</Badge>
-                      : null
-                  }
+                  editable={editable}
+                  value={form.user_role}
+                  onChange={(v) => set("user_role", v)}
+                  options={USER_ROLE_OPTIONS}
                 />
-                <Field
+                <EFSelect
                   label="Account status"
-                  value={
-                    customer.account_status
-                      ? <Badge variant="outline" className="bg-muted text-muted-foreground">{customer.account_status}</Badge>
-                      : null
-                  }
+                  editable={editable}
+                  value={form.account_status}
+                  onChange={(v) => set("account_status", v)}
+                  options={ACCOUNT_STATUS_OPTIONS}
                 />
-                <Field
+                <EFSelect
                   label="Eligibility status"
-                  value={
-                    customer.eligibility_status
-                      ? <Badge variant="outline" className={statusBadgeClass(customer.eligibility_status)}>{customer.eligibility_status.replace(/_/g, " ")}</Badge>
-                      : null
-                  }
+                  editable={editable}
+                  value={form.eligibility_status}
+                  onChange={(v) => set("eligibility_status", v)}
+                  options={ELIGIBILITY_OPTIONS}
                 />
-                <Field label="Blue IC" value={<YesNo value={customer.blue_ic_status} />} />
-                <Field label="License type" value={customer.license_type} />
-                <Field label="Criminal record" value={customer.criminal_record_status} />
+                <EFBool
+                  label="Blue IC"
+                  editable={editable}
+                  value={form.blue_ic_status}
+                  onChange={(v) => set("blue_ic_status", v)}
+                />
+                <EFSelect
+                  label="License type"
+                  editable={editable}
+                  value={form.license_type}
+                  onChange={(v) => set("license_type", v)}
+                  options={LICENSE_TYPE_OPTIONS}
+                />
+                <EFSelect
+                  label="Criminal record"
+                  editable={editable}
+                  value={form.criminal_record_status}
+                  onChange={(v) => set("criminal_record_status", v)}
+                  options={CRIMINAL_RECORD_OPTIONS}
+                />
               </SectionCard>
             </TabsContent>
 
             {/* VEHICLE / PSV */}
             <TabsContent value="vehicle" className="space-y-4">
-              {(isGrabCar || (!isGrabFood && (customer.has_car || customer.car_model))) && (
+              {(isGrabCar || (!isGrabFood && (form.has_car || form.car_model))) && (
                 <SectionCard title="GrabCar / Vehicle / PSV">
-                  <Field label="PSV license" value={customer.psv_license_status} />
-                  <Field label="Has car" value={<YesNo value={customer.has_car} />} />
-                  <Field label="Car model" value={customer.car_model} />
-                  <Field label="Car year" value={dash(customer.car_year)} capitalize={false} />
-                  <Field label="Vehicle type" value={customer.vehicle_type} />
-                  <Field label="Vehicle model" value={customer.vehicle_model} />
-                  <Field label="Vehicle manufacturer" value={customer.vehicle_manufacturer} />
-                  <Field label="Insurance status" value={customer.insurance_status} />
-                  <Field label="Insurance name" value={customer.insurance_name} />
-                  <Field label="Insurance expired" value={fmtDate(customer.insurance_expired_date)} />
+                  <EFSelect
+                    label="PSV license"
+                    editable={editable}
+                    value={form.psv_license_status}
+                    onChange={(v) => set("psv_license_status", v)}
+                    options={PSV_LICENSE_OPTIONS}
+                  />
+                  <EFBool label="Has car" editable={editable} value={form.has_car} onChange={(v) => set("has_car", v)} />
+                  <EFText label="Car model" editable={editable} value={form.car_model} onChange={(v) => set("car_model", v)} />
+                  <EFText label="Car year" editable={editable} value={form.car_year} onChange={(v) => set("car_year", v)} type="number" capitalize={false} />
+                  <EFText label="Vehicle type" editable={editable} value={form.vehicle_type} onChange={(v) => set("vehicle_type", v)} />
+                  <EFText label="Vehicle model" editable={editable} value={form.vehicle_model} onChange={(v) => set("vehicle_model", v)} />
+                  <EFText label="Vehicle manufacturer" editable={editable} value={form.vehicle_manufacturer} onChange={(v) => set("vehicle_manufacturer", v)} />
+                  <EFSelect
+                    label="Insurance status"
+                    editable={editable}
+                    value={form.insurance_status}
+                    onChange={(v) => set("insurance_status", v)}
+                    options={INSURANCE_STATUS_OPTIONS}
+                  />
+                  <EFText label="Insurance name" editable={editable} value={form.insurance_name} onChange={(v) => set("insurance_name", v)} />
+                  <EFText label="Insurance expired" editable={editable} value={form.insurance_expired_date} onChange={(v) => set("insurance_expired_date", v)} type="date" capitalize={false} />
                   <div className="sm:col-span-2">
-                    <Field label="Insurance notes" value={customer.insurance_notes} />
+                    <EFTextarea label="Insurance notes" editable={editable} value={form.insurance_notes} onChange={(v) => set("insurance_notes", v)} rows={2} />
                   </div>
                 </SectionCard>
               )}
 
-              {(isGrabFood || customer.has_motorcycle || customer.motorcycle_details) && (
+              {(isGrabFood || form.has_motorcycle || form.motorcycle_details) && (
                 <SectionCard title="GrabFood / Motorcycle">
-                  <Field label="Has motorcycle" value={<YesNo value={customer.has_motorcycle} />} />
-                  <Field label="Vehicle type" value={customer.vehicle_type} />
-                  <Field label="Vehicle model" value={customer.vehicle_model} />
-                  <Field label="Vehicle manufacturer" value={customer.vehicle_manufacturer} />
+                  <EFBool label="Has motorcycle" editable={editable} value={form.has_motorcycle} onChange={(v) => set("has_motorcycle", v)} />
+                  <EFText label="Vehicle type" editable={editable} value={form.vehicle_type} onChange={(v) => set("vehicle_type", v)} />
+                  <EFText label="Vehicle model" editable={editable} value={form.vehicle_model} onChange={(v) => set("vehicle_model", v)} />
+                  <EFText label="Vehicle manufacturer" editable={editable} value={form.vehicle_manufacturer} onChange={(v) => set("vehicle_manufacturer", v)} />
                   <div className="sm:col-span-2">
-                    <Field label="Motorcycle details" value={customer.motorcycle_details} />
+                    <EFTextarea label="Motorcycle details" editable={editable} value={form.motorcycle_details} onChange={(v) => set("motorcycle_details", v)} rows={2} />
                   </div>
                 </SectionCard>
               )}
 
               <SectionCard title="PSV class info">
-                <Field label="PSV class ID" value={customer.psv_class_id} mono capitalize={false} />
-                <Field label="PSV class" value={customer.psv_class} />
-                <Field label="PSV class date" value={fmtDate(customer.psv_class_date)} />
-                <Field label="PSV class location" value={customer.psv_class_location} />
+                <EFText label="PSV class ID" editable={editable} value={form.psv_class_id} onChange={(v) => set("psv_class_id", v)} mono capitalize={false} />
+                <EFText label="PSV class" editable={editable} value={form.psv_class} onChange={(v) => set("psv_class", v)} />
+                <EFText label="PSV class date" editable={editable} value={form.psv_class_date} onChange={(v) => set("psv_class_date", v)} type="date" capitalize={false} />
+                <EFText label="PSV class location" editable={editable} value={form.psv_class_location} onChange={(v) => set("psv_class_location", v)} />
               </SectionCard>
             </TabsContent>
 
@@ -346,75 +504,60 @@ export const CustomerDetailDrawer = ({
             <TabsContent value="notes" className="space-y-4">
               <SectionCard title="Admin internal fields">
                 <div className="sm:col-span-2">
-                  <Field
+                  <EFText
                     label="Bolt URL"
+                    editable={editable}
+                    value={form.bolt_url}
+                    onChange={(v) => set("bolt_url", v)}
+                    type="url"
                     capitalize={false}
-                    value={
-                      customer.bolt_url
-                        ? (
-                          <a
-                            href={customer.bolt_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-brand underline break-all"
-                          >
-                            {customer.bolt_url}
-                          </a>
-                        )
-                        : null
-                    }
                   />
+                  {!editable && form.bolt_url && (
+                    <a
+                      href={form.bolt_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-brand underline break-all text-xs"
+                    >
+                      {form.bolt_url}
+                    </a>
+                  )}
                 </div>
-                <Field label="Next follow-up date" value={fmtDate(customer.next_follow_up_date)} />
-                <Field label="Next follow-up time" value={dash(customer.next_follow_up_time)} capitalize={false} />
+                <EFText
+                  label="Next follow-up date"
+                  editable={editable}
+                  value={form.next_follow_up_date}
+                  onChange={(v) => set("next_follow_up_date", v)}
+                  type="date"
+                  capitalize={false}
+                />
+                <EFText
+                  label="Next follow-up time"
+                  editable={editable}
+                  value={form.next_follow_up_time}
+                  onChange={(v) => set("next_follow_up_time", v)}
+                  type="time"
+                  capitalize={false}
+                />
                 <div className="sm:col-span-2">
-                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Remarks</div>
-                  <div className="mt-1 p-3 rounded-md bg-surface-muted text-sm whitespace-pre-wrap min-h-[60px]">
-                    {customer.remarks ?? "—"}
-                  </div>
+                  <EFTextarea
+                    label="Remarks"
+                    editable={editable}
+                    value={form.remarks}
+                    onChange={(v) => set("remarks", v)}
+                    rows={4}
+                    placeholder="Add notes about this customer..."
+                  />
                 </div>
               </SectionCard>
 
               {editable ? (
-                <Card className="p-5 space-y-4">
-                  <h4 className="text-sm font-semibold text-charcoal">Update workflow</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label>Status</Label>
-                      <Select value={status} onValueChange={setStatus}>
-                        <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
-                        <SelectContent>
-                          {CUSTOMER_STATUS_OPTIONS.map((s) => (
-                            <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Next follow-up date</Label>
-                      <Input type="date" value={followDate} onChange={(e) => setFollowDate(e.target.value)} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Next follow-up time</Label>
-                      <Input type="time" value={followTime} onChange={(e) => setFollowTime(e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Remarks</Label>
-                    <Textarea
-                      rows={4}
-                      value={remarks}
-                      onChange={(e) => setRemarks(e.target.value)}
-                      placeholder="Add notes about this customer..."
-                    />
-                  </div>
-                  <div className="flex justify-end">
-                    <Button onClick={save} disabled={saving}>
-                      {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                      Save changes
-                    </Button>
-                  </div>
-                </Card>
+                <div className="flex justify-end">
+                  <Button onClick={save} disabled={saving}>
+                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save changes
+                  </Button>
+                </div>
               ) : (
                 <Card className="p-4 text-sm text-muted-foreground border-dashed">
                   This customer is not assigned to you. You have read-only access.
