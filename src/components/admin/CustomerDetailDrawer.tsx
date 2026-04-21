@@ -313,25 +313,33 @@ export const CustomerDetailDrawer = ({
 
             {/* VEHICLE / PSV */}
             <TabsContent value="vehicle" className="space-y-4">
-              {(isGrabCar || (!isGrabFood && (customer.has_car || customer.car_model))) && (
-                <SectionCard title="GrabCar / Vehicle / PSV">
-                  <Field label="PSV license" value={customer.psv_license_status} />
-                  <Field label="Has car" value={<YesNo value={customer.has_car} />} />
-                  <Field label="Car model" value={customer.car_model} />
-                  <Field label="Car year" value={dash(customer.car_year)} capitalize={false} />
-                  <Field label="Vehicle type" value={customer.vehicle_type} />
-                  <Field label="Vehicle model" value={customer.vehicle_model} />
-                  <Field label="Vehicle manufacturer" value={customer.vehicle_manufacturer} />
-                  <Field label="Insurance status" value={customer.insurance_status} />
-                  <Field label="Insurance name" value={customer.insurance_name} />
-                  <Field label="Insurance expired" value={fmtDate(customer.insurance_expired_date)} />
-                  <div className="sm:col-span-2">
-                    <Field label="Insurance notes" value={customer.insurance_notes} />
-                  </div>
-                </SectionCard>
+              {isGrabCar && (
+                <>
+                  <SectionCard title="GrabCar / Vehicle / PSV">
+                    <Field label="PSV license status" value={customer.psv_license_status} />
+                    <Field label="Has car" value={<YesNo value={customer.has_car} />} />
+                    <Field label="Car model" value={customer.car_model} />
+                    <Field label="Car year" value={dash(customer.car_year)} capitalize={false} />
+                    <Field label="Vehicle type" value={customer.vehicle_type} />
+                    <Field label="Vehicle model" value={customer.vehicle_model} />
+                    <Field label="Vehicle manufacturer" value={customer.vehicle_manufacturer} />
+                    <Field label="Insurance status" value={customer.insurance_status} />
+                    <Field label="Insurance name" value={customer.insurance_name} />
+                    <Field label="Insurance expired" value={fmtDate(customer.insurance_expired_date)} />
+                    <div className="sm:col-span-2">
+                      <Field label="Insurance notes" value={customer.insurance_notes} />
+                    </div>
+                  </SectionCard>
+                  <SectionCard title="PSV class info">
+                    <Field label="PSV class ID" value={customer.psv_class_id} mono capitalize={false} />
+                    <Field label="PSV class" value={customer.psv_class} />
+                    <Field label="PSV class date" value={fmtDate(customer.psv_class_date)} />
+                    <Field label="PSV class location" value={customer.psv_class_location} />
+                  </SectionCard>
+                </>
               )}
 
-              {(isGrabFood || customer.has_motorcycle || customer.motorcycle_details) && (
+              {isGrabFood && (
                 <SectionCard title="GrabFood / Motorcycle">
                   <Field label="Has motorcycle" value={<YesNo value={customer.has_motorcycle} />} />
                   <Field label="Vehicle type" value={customer.vehicle_type} />
@@ -343,12 +351,11 @@ export const CustomerDetailDrawer = ({
                 </SectionCard>
               )}
 
-              <SectionCard title="PSV class info">
-                <Field label="PSV class ID" value={customer.psv_class_id} mono capitalize={false} />
-                <Field label="PSV class" value={customer.psv_class} />
-                <Field label="PSV class date" value={fmtDate(customer.psv_class_date)} />
-                <Field label="PSV class location" value={customer.psv_class_location} />
-              </SectionCard>
+              {!isGrabCar && !isGrabFood && (
+                <Card className="p-6 text-sm text-muted-foreground border-dashed text-center">
+                  No service type set for this customer — vehicle details are unavailable.
+                </Card>
+              )}
             </TabsContent>
 
             {/* NOTES */}
