@@ -117,6 +117,7 @@ const toForm = (c: Customer): FormState => ({
   psv_class_location: c.psv_class_location ?? "",
   bolt_url: c.bolt_url ?? "",
   remarks: c.remarks ?? "",
+  bolt_status: c.bolt_status ?? "bolt_submitted",
   customer_status: c.customer_status ?? "",
   priority_status: c.priority_status ?? "",
   next_follow_up_date: c.next_follow_up_date?.slice(0, 10) ?? "",
