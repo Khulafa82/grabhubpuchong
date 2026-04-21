@@ -263,13 +263,19 @@ export const CustomerDetailDrawer = ({
               <Badge variant="outline" className={statusBadgeClass(customer.customer_status)}>
                 {(customer.customer_status ?? "new").replace(/_/g, " ")}
               </Badge>
-              <Badge variant="outline" className={priorityBadgeClass(customer.priority_status)}>
-                {(customer.priority_status ?? "normal").replace(/_/g, " ")}
-              </Badge>
-              {customer.walk_in_flag && (
+              {customer.walk_in_flag ? (
                 <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-400">
                   Walk-in customer
                 </Badge>
+              ) : (
+                <>
+                  <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
+                    Registered online
+                  </Badge>
+                  <Badge variant="outline" className={priorityBadgeClass(customer.priority_status)}>
+                    {(customer.priority_status ?? "normal").replace(/_/g, " ")}
+                  </Badge>
+                </>
               )}
               {customer.duplicate_flag && (
                 <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">

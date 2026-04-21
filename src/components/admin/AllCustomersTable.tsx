@@ -199,9 +199,21 @@ export const AllCustomersTable = ({
       ) : filtered.length === 0 ? (
         <Card className="p-10 text-center text-sm text-muted-foreground">No customer records match the current filters.</Card>
       ) : (
-        <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
+        <div className="space-y-6">
+          {[
+            { key: "walkin", title: "Walk-in", subtitle: "Customers who came in person", rows: walkInRows },
+            { key: "online", title: "Register Online", subtitle: "Customers registered through the online form", rows: onlineRows },
+          ].filter((g) => g.rows.length > 0).map((group) => (
+          <Card key={group.key} className="overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b bg-surface-muted/40">
+              <div>
+                <h3 className="text-sm font-semibold text-charcoal">{group.title}</h3>
+                <p className="text-xs text-muted-foreground">{group.subtitle}</p>
+              </div>
+              <Badge variant="outline">{group.rows.length}</Badge>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[110px]">Applicant ID</TableHead>
@@ -221,10 +233,11 @@ export const AllCustomersTable = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pageRows.map((c) => {
+                {group.rows.map((c) => {
                   const overdue = isOverdue(c.next_follow_up_date);
                   const dueToday = isToday(c.next_follow_up_date);
                   const editable = !!myId && c.admin_in_charge === myId;
+                  const isWalkIn = !!c.walk_in_flag;
                   return (
                     <TableRow
                       key={c.id}
@@ -235,10 +248,12 @@ export const AllCustomersTable = ({
                       <TableCell className="max-w-[200px]">
                         <div className="font-medium text-charcoal truncate">{c.full_name ?? "—"}</div>
                         <div className="flex gap-1 mt-0.5 flex-wrap">
-                          {c.priority_status === "walk_in" && (
-                            <Badge variant="outline" className="text-[10px] px-1 py-0 bg-amber-500/10 text-amber-700 border-amber-500/20">walk-in</Badge>
+                          {isWalkIn ? (
+                            <Badge variant="outline" className="text-[10px] px-1 py-0 bg-amber-500/10 text-amber-700 border-amber-500/20">Walk-in</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] px-1 py-0 bg-muted text-muted-foreground border-border">Registered online</Badge>
                           )}
-                          {c.priority_status === "urgent" && (
+                          {!isWalkIn && c.priority_status === "urgent" && (
                             <Badge variant="outline" className="text-[10px] px-1 py-0 bg-destructive/10 text-destructive border-destructive/20">urgent</Badge>
                           )}
                           {overdue && (
@@ -258,9 +273,15 @@ export const AllCustomersTable = ({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={priorityBadgeClass(c.priority_status)}>
-                          {(c.priority_status ?? "normal").replace(/_/g, " ")}
-                        </Badge>
+                        {isWalkIn ? (
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-400">
+                            Walk-in customer
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className={priorityBadgeClass(c.priority_status)}>
+                            {(c.priority_status ?? "normal").replace(/_/g, " ")}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className={overdue ? "text-destructive font-medium text-xs whitespace-nowrap" : dueToday ? "text-amber-700 dark:text-amber-400 font-medium text-xs whitespace-nowrap" : "text-xs whitespace-nowrap"}>
                         {c.next_follow_up_date ? new Date(c.next_follow_up_date).toLocaleDateString() : "—"}
@@ -309,10 +330,12 @@ export const AllCustomersTable = ({
                   );
                 })}
               </TableBody>
-            </Table>
-          </div>
+              </Table>
+            </div>
+          </Card>
+          ))}
           {pageCount > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t text-xs">
+            <div className="flex items-center justify-between px-4 py-3 border-t text-xs bg-card rounded-md border">
               <span className="text-muted-foreground">Page {safePage} of {pageCount}</span>
               <div className="flex gap-1">
                 <Button size="sm" variant="outline" disabled={safePage === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
@@ -320,7 +343,7 @@ export const AllCustomersTable = ({
               </div>
             </div>
           )}
-        </Card>
+        </div>
       )}
 
       <CustomerDetailDrawer
