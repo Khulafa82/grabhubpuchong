@@ -339,7 +339,18 @@ export const CustomerDetailDrawer = ({
                   label="Walk-in"
                   editable={editable}
                   value={form.walk_in_flag}
-                  onChange={(v) => set("walk_in_flag", v)}
+                  onChange={(v) =>
+                    setForm((f) =>
+                      f
+                        ? {
+                            ...f,
+                            walk_in_flag: v,
+                            // Auto-elevate priority when marked walk-in
+                            priority_status: v ? "urgent" : f.priority_status,
+                          }
+                        : f,
+                    )
+                  }
                 />
                 <EFBool
                   label="Duplicate"
