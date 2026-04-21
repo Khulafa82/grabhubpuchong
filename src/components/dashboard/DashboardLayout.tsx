@@ -30,8 +30,7 @@ export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     const stored = window.localStorage.getItem("dashboard:sidebar:collapsed");
-    if (stored !== null) return stored === "1";
-    return window.innerWidth < 1280;
+    return stored === "1";
   });
   const [signingOut, setSigningOut] = useState(false);
   const { signOut, profile } = useAuth();
