@@ -266,6 +266,11 @@ export const CustomerDetailDrawer = ({
               <Badge variant="outline" className={priorityBadgeClass(customer.priority_status)}>
                 {(customer.priority_status ?? "normal").replace(/_/g, " ")}
               </Badge>
+              {customer.walk_in_flag && (
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-400">
+                  Walk-in customer
+                </Badge>
+              )}
               {customer.duplicate_flag && (
                 <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
                   <AlertTriangle className="w-3 h-3 mr-1" /> duplicate
@@ -334,7 +339,18 @@ export const CustomerDetailDrawer = ({
                   label="Walk-in"
                   editable={editable}
                   value={form.walk_in_flag}
-                  onChange={(v) => set("walk_in_flag", v)}
+                  onChange={(v) =>
+                    setForm((f) =>
+                      f
+                        ? {
+                            ...f,
+                            walk_in_flag: v,
+                            // Auto-elevate priority when marked walk-in
+                            priority_status: v ? "urgent" : f.priority_status,
+                          }
+                        : f,
+                    )
+                  }
                 />
                 <EFBool
                   label="Duplicate"

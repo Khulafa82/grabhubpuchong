@@ -61,7 +61,7 @@ export const CUSTOMER_STATUS_OPTIONS = [
   "cold_lead",
 ];
 
-export const PRIORITY_OPTIONS = ["normal", "urgent", "walk_in", "vip"];
+export const PRIORITY_OPTIONS = ["normal", "urgent", "overdue"];
 
 export const statusBadgeClass = (status?: string | null) => {
   switch (status) {
@@ -90,10 +90,8 @@ export const priorityBadgeClass = (p?: string | null) => {
   switch (p) {
     case "urgent":
       return "bg-destructive/10 text-destructive border-destructive/20";
-    case "walk_in":
+    case "overdue":
       return "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-400";
-    case "vip":
-      return "bg-brand/10 text-brand border-brand/20";
     default:
       return "bg-muted text-muted-foreground border-border";
   }
