@@ -12,6 +12,7 @@ import {
 import {
   Customer, CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
   statusBadgeClass, priorityBadgeClass, telLink, waLink,
+  BOLT_STATUS_OPTIONS, BOLT_STATUS_LABEL, boltStatusBadgeClass,
 } from "@/lib/customers";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
