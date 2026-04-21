@@ -221,6 +221,8 @@ export const CustomerDetailDrawer = ({
               <SectionCard title="Registration summary">
                 <Field label="Applicant ID" value={customer.applicant_id} mono capitalize={false} />
                 <Field label="Registration date" value={fmtDate(customer.registration_date ?? customer.created_at)} />
+                <Field label="Created at" value={fmtDateTime(customer.created_at)} />
+                <Field label="Updated at" value={fmtDateTime(customer.updated_at)} />
                 <Field label="Last edited at" value={fmtDateTime(customer.updated_at)} />
                 <Field
                   label="Assigned admin"
@@ -230,7 +232,14 @@ export const CustomerDetailDrawer = ({
                       : customer.assigned_admin_name ?? <span className="text-muted-foreground italic">Unassigned</span>
                   }
                 />
-                <Field label="Assignment status" value={customer.assignment_status} />
+                <Field
+                  label="Assignment status"
+                  value={
+                    customer.assignment_status
+                      ? <Badge variant="outline" className="bg-muted text-muted-foreground">{customer.assignment_status.replace(/_/g, " ")}</Badge>
+                      : null
+                  }
+                />
                 <Field
                   label="Customer status"
                   value={
