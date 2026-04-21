@@ -352,7 +352,7 @@ const ClassCard = ({
         <div className="min-w-0">
           <div className="font-semibold text-charcoal truncate">{psvClass.title ?? "Untitled class"}</div>
           <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-            <Calendar className="w-3 h-3" /> {dateStr}
+            <CalIcon className="w-3 h-3" /> {dateStr}
             <span className="mx-1">·</span>
             <Clock className="w-3 h-3" />
             {formatTimeRange(psvClass.start_time, psvClass.end_time)}
