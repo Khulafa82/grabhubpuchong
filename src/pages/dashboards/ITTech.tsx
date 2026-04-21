@@ -15,6 +15,7 @@ import Audit from "./it/Audit";
 import TechSettings from "./it/TechSettings";
 import ItSettings from "./it/Settings";
 import { Card } from "@/components/ui/card";
+import { PsvCalendarPage } from "@/components/psv/PsvCalendarPage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +36,7 @@ const items = [
   { label: "Reassignment", to: "/it-tech/reassignment", icon: Shuffle },
   { label: "Leave Handover", to: "/it-tech/handover", icon: ClipboardCheck },
   { label: "Duplicates", to: "/it-tech/duplicates", icon: Copy },
+  { label: "PSV Calendar", to: "/it-tech/psv-calendar", icon: ClipboardCheck },
   { label: "Audit Trail", to: "/it-tech/audit", icon: ScrollText },
   { label: "Tech Settings", to: "/it-tech/tech-settings", icon: ShieldAlert },
   { label: "Biodata & Settings", to: "/it-tech/settings", icon: Settings },
@@ -492,6 +494,7 @@ const ITTech = () => (
       <Route path="handover" element={<Handover />} />
       <Route path="duplicates" element={<Duplicates />} />
       <Route path="audit" element={<Audit />} />
+      <Route path="psv-calendar" element={<PsvCalendarPage role="it_tech" />} />
       <Route path="tech-settings" element={<TechSettings />} />
       <Route path="settings" element={<ItSettings />} />
     </Route>
