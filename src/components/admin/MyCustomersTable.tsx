@@ -236,7 +236,7 @@ export const MyCustomersTable = ({ rows, loading, error, refetch }: Props) => {
                   <TableHead>Priority</TableHead>
                   <TableHead>Follow-up</TableHead>
                   <TableHead>Registered</TableHead>
-                  <TableHead className="text-right sticky right-0 bg-card shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.06)]">
+                  <TableHead className="text-right sticky right-0 bg-card shadow-[-4px_0_8px_-4px_hsl(var(--foreground)/0.06)]">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -291,7 +291,7 @@ export const MyCustomersTable = ({ rows, loading, error, refetch }: Props) => {
                           : "—"}
                       </TableCell>
                       <TableCell
-                        className="text-right sticky right-0 bg-card shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.06)]"
+                        className="text-right sticky right-0 bg-card shadow-[-4px_0_8px_-4px_hsl(var(--foreground)/0.06)]"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex justify-end gap-1">
