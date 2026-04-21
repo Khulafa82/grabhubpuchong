@@ -539,6 +539,35 @@ export const CustomerDetailDrawer = ({
             {/* NOTES */}
             <TabsContent value="notes" className="space-y-4">
               <SectionCard title="Admin internal fields">
+                <div className="sm:col-span-2 min-w-0 space-y-1">
+                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground font-normal">
+                    Bolt status
+                  </Label>
+                  {editable ? (
+                    <Select
+                      value={form.bolt_status || "bolt_submitted"}
+                      onValueChange={(v) => set("bolt_status", v)}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BOLT_STATUS_OPTIONS.map((o) => (
+                          <SelectItem key={o} value={o}>{BOLT_STATUS_LABEL[o]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="mt-0.5">
+                      <Badge
+                        variant="outline"
+                        className={boltStatusBadgeClass(form.bolt_status || "bolt_submitted")}
+                      >
+                        {BOLT_STATUS_LABEL[form.bolt_status || "bolt_submitted"]}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
                 <div className="sm:col-span-2">
                   <EFText
                     label="Bolt URL"
