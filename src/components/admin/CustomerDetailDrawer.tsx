@@ -221,8 +221,6 @@ export const CustomerDetailDrawer = ({
               <SectionCard title="Registration summary">
                 <Field label="Applicant ID" value={customer.applicant_id} mono capitalize={false} />
                 <Field label="Registration date" value={fmtDate(customer.registration_date ?? customer.created_at)} />
-                <Field label="Created at" value={fmtDateTime(customer.created_at)} />
-                <Field label="Updated at" value={fmtDateTime(customer.updated_at)} />
                 <Field label="Last edited at" value={fmtDateTime(customer.updated_at)} />
                 <Field
                   label="Assigned admin"
@@ -232,14 +230,7 @@ export const CustomerDetailDrawer = ({
                       : customer.assigned_admin_name ?? <span className="text-muted-foreground italic">Unassigned</span>
                   }
                 />
-                <Field
-                  label="Assignment status"
-                  value={
-                    customer.assignment_status
-                      ? <Badge variant="outline" className="bg-muted text-muted-foreground">{customer.assignment_status.replace(/_/g, " ")}</Badge>
-                      : null
-                  }
-                />
+                <Field label="Assignment status" value={customer.assignment_status} />
                 <Field
                   label="Customer status"
                   value={
@@ -313,33 +304,25 @@ export const CustomerDetailDrawer = ({
 
             {/* VEHICLE / PSV */}
             <TabsContent value="vehicle" className="space-y-4">
-              {isGrabCar && (
-                <>
-                  <SectionCard title="GrabCar / Vehicle / PSV">
-                    <Field label="PSV license status" value={customer.psv_license_status} />
-                    <Field label="Has car" value={<YesNo value={customer.has_car} />} />
-                    <Field label="Car model" value={customer.car_model} />
-                    <Field label="Car year" value={dash(customer.car_year)} capitalize={false} />
-                    <Field label="Vehicle type" value={customer.vehicle_type} />
-                    <Field label="Vehicle model" value={customer.vehicle_model} />
-                    <Field label="Vehicle manufacturer" value={customer.vehicle_manufacturer} />
-                    <Field label="Insurance status" value={customer.insurance_status} />
-                    <Field label="Insurance name" value={customer.insurance_name} />
-                    <Field label="Insurance expired" value={fmtDate(customer.insurance_expired_date)} />
-                    <div className="sm:col-span-2">
-                      <Field label="Insurance notes" value={customer.insurance_notes} />
-                    </div>
-                  </SectionCard>
-                  <SectionCard title="PSV class info">
-                    <Field label="PSV class ID" value={customer.psv_class_id} mono capitalize={false} />
-                    <Field label="PSV class" value={customer.psv_class} />
-                    <Field label="PSV class date" value={fmtDate(customer.psv_class_date)} />
-                    <Field label="PSV class location" value={customer.psv_class_location} />
-                  </SectionCard>
-                </>
+              {(isGrabCar || (!isGrabFood && (customer.has_car || customer.car_model))) && (
+                <SectionCard title="GrabCar / Vehicle / PSV">
+                  <Field label="PSV license" value={customer.psv_license_status} />
+                  <Field label="Has car" value={<YesNo value={customer.has_car} />} />
+                  <Field label="Car model" value={customer.car_model} />
+                  <Field label="Car year" value={dash(customer.car_year)} capitalize={false} />
+                  <Field label="Vehicle type" value={customer.vehicle_type} />
+                  <Field label="Vehicle model" value={customer.vehicle_model} />
+                  <Field label="Vehicle manufacturer" value={customer.vehicle_manufacturer} />
+                  <Field label="Insurance status" value={customer.insurance_status} />
+                  <Field label="Insurance name" value={customer.insurance_name} />
+                  <Field label="Insurance expired" value={fmtDate(customer.insurance_expired_date)} />
+                  <div className="sm:col-span-2">
+                    <Field label="Insurance notes" value={customer.insurance_notes} />
+                  </div>
+                </SectionCard>
               )}
 
-              {isGrabFood && (
+              {(isGrabFood || customer.has_motorcycle || customer.motorcycle_details) && (
                 <SectionCard title="GrabFood / Motorcycle">
                   <Field label="Has motorcycle" value={<YesNo value={customer.has_motorcycle} />} />
                   <Field label="Vehicle type" value={customer.vehicle_type} />
@@ -351,11 +334,12 @@ export const CustomerDetailDrawer = ({
                 </SectionCard>
               )}
 
-              {!isGrabCar && !isGrabFood && (
-                <Card className="p-6 text-sm text-muted-foreground border-dashed text-center">
-                  No service type set for this customer — vehicle details are unavailable.
-                </Card>
-              )}
+              <SectionCard title="PSV class info">
+                <Field label="PSV class ID" value={customer.psv_class_id} mono capitalize={false} />
+                <Field label="PSV class" value={customer.psv_class} />
+                <Field label="PSV class date" value={fmtDate(customer.psv_class_date)} />
+                <Field label="PSV class location" value={customer.psv_class_location} />
+              </SectionCard>
             </TabsContent>
 
             {/* NOTES */}
