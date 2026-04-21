@@ -86,6 +86,9 @@ export const AllCustomersTable = ({
   const safePage = Math.min(page, pageCount);
   const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
+  const walkInRows = useMemo(() => pageRows.filter((c) => !!c.walk_in_flag), [pageRows]);
+  const onlineRows = useMemo(() => pageRows.filter((c) => !c.walk_in_flag), [pageRows]);
+
   const reset = () => {
     setSearch(""); setPhone(""); setIc("");
     setService("all"); setCategory("all"); setLocation("all");
