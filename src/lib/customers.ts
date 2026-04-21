@@ -46,6 +46,7 @@ export interface Customer {
   psv_class_location?: string | null;
   bolt_url?: string | null;
   next_follow_up_time?: string | null;
+  bolt_status?: string | null;
 }
 
 export const CUSTOMER_STATUS_OPTIONS = [
@@ -62,6 +63,37 @@ export const CUSTOMER_STATUS_OPTIONS = [
 ];
 
 export const PRIORITY_OPTIONS = ["normal", "urgent", "overdue"];
+
+export const BOLT_STATUS_OPTIONS = [
+  "bolt_submitted",
+  "bolt_in_review",
+  "bolt_problem",
+  "completed",
+  "rejected",
+] as const;
+
+export const BOLT_STATUS_LABEL: Record<string, string> = {
+  bolt_submitted: "Submitted",
+  bolt_in_review: "In Review",
+  bolt_problem: "Problem",
+  completed: "Completed",
+  rejected: "Rejected",
+};
+
+export const boltStatusBadgeClass = (s?: string | null) => {
+  switch (s) {
+    case "bolt_in_review":
+      return "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-400";
+    case "bolt_problem":
+    case "rejected":
+      return "bg-destructive/10 text-destructive border-destructive/20";
+    case "completed":
+      return "bg-brand/10 text-brand border-brand/20";
+    case "bolt_submitted":
+    default:
+      return "bg-muted text-muted-foreground border-border";
+  }
+};
 
 export const statusBadgeClass = (status?: string | null) => {
   switch (status) {

@@ -12,12 +12,17 @@ import {
 import {
   Customer, CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
   statusBadgeClass, priorityBadgeClass, telLink, waLink,
+  BOLT_STATUS_OPTIONS, BOLT_STATUS_LABEL, boltStatusBadgeClass,
 } from "@/lib/customers";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import {
   EFText, EFTextarea, EFSelect, EFBool,
 } from "./customer-detail/EditableField";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface Props {
   customer: Customer | null;
@@ -70,6 +75,7 @@ type FormState = {
   psv_class_location: string;
   bolt_url: string;
   remarks: string;
+  bolt_status: string;
   customer_status: string;
   priority_status: string;
   next_follow_up_date: string;
@@ -111,6 +117,7 @@ const toForm = (c: Customer): FormState => ({
   psv_class_location: c.psv_class_location ?? "",
   bolt_url: c.bolt_url ?? "",
   remarks: c.remarks ?? "",
+  bolt_status: c.bolt_status ?? "bolt_submitted",
   customer_status: c.customer_status ?? "",
   priority_status: c.priority_status ?? "",
   next_follow_up_date: c.next_follow_up_date?.slice(0, 10) ?? "",
@@ -202,6 +209,7 @@ export const CustomerDetailDrawer = ({
       psv_class_location: form.psv_class_location || null,
       bolt_url: form.bolt_url || null,
       remarks: form.remarks || null,
+      bolt_status: form.bolt_status || "bolt_submitted",
       customer_status: form.customer_status || null,
       priority_status: form.priority_status || null,
       next_follow_up_date: form.next_follow_up_date || null,
@@ -282,6 +290,12 @@ export const CustomerDetailDrawer = ({
                   <AlertTriangle className="w-3 h-3 mr-1" /> duplicate
                 </Badge>
               )}
+              <Badge
+                variant="outline"
+                className={boltStatusBadgeClass(customer.bolt_status ?? "bolt_submitted")}
+              >
+                {BOLT_STATUS_LABEL[customer.bolt_status ?? "bolt_submitted"]}
+              </Badge>
             </div>
 
             {/* Quick actions (always shown) */}
@@ -525,6 +539,35 @@ export const CustomerDetailDrawer = ({
             {/* NOTES */}
             <TabsContent value="notes" className="space-y-4">
               <SectionCard title="Admin internal fields">
+                <div className="sm:col-span-2 min-w-0 space-y-1">
+                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground font-normal">
+                    Bolt status
+                  </Label>
+                  {editable ? (
+                    <Select
+                      value={form.bolt_status || "bolt_submitted"}
+                      onValueChange={(v) => set("bolt_status", v)}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BOLT_STATUS_OPTIONS.map((o) => (
+                          <SelectItem key={o} value={o}>{BOLT_STATUS_LABEL[o]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="mt-0.5">
+                      <Badge
+                        variant="outline"
+                        className={boltStatusBadgeClass(form.bolt_status || "bolt_submitted")}
+                      >
+                        {BOLT_STATUS_LABEL[form.bolt_status || "bolt_submitted"]}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
                 <div className="sm:col-span-2">
                   <EFText
                     label="Bolt URL"
