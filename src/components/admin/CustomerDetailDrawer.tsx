@@ -19,6 +19,10 @@ import { toast } from "sonner";
 import {
   EFText, EFTextarea, EFSelect, EFBool,
 } from "./customer-detail/EditableField";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface Props {
   customer: Customer | null;
@@ -71,6 +75,7 @@ type FormState = {
   psv_class_location: string;
   bolt_url: string;
   remarks: string;
+  bolt_status: string;
   customer_status: string;
   priority_status: string;
   next_follow_up_date: string;
