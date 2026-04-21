@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import BiodataSettings from "@/components/dashboard/BiodataSettings";
 import LeaveManagement from "./super/LeaveManagement";
+import { PsvCalendarPage } from "@/components/psv/PsvCalendarPage";
 
 const items = [
   { label: "Dashboard Overview", to: "/super-admin", icon: LayoutDashboard },
