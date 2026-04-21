@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Calendar, dateFnsLocalizer, View, Event } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
-import enUS from "date-fns/locale/en-US";
+import { enUS } from "date-fns/locale/en-US";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { PsvClass, classCapacityState } from "@/lib/psv";
 
