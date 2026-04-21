@@ -11,11 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Phone, MessageCircle, Pencil, Loader2, Eye, Copy, CheckCircle2,
-  Search, X,
+  Phone, MessageCircle, Loader2, Eye, Copy, CheckCircle2, Search, X,
 } from "lucide-react";
 import {
   Customer, statusBadgeClass, priorityBadgeClass, isOverdue, isToday,
@@ -23,6 +19,7 @@ import {
 } from "@/lib/customers";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { CustomerDetailDrawer } from "./CustomerDetailDrawer";
 
 interface Props {
   rows: Customer[];
@@ -44,7 +41,7 @@ const isUpcoming = (date?: string | null) => {
   return d > today && d <= in7;
 };
 
-export const MyCustomersTable = ({ rows, loading, error, onEdit, refetch }: Props) => {
+export const MyCustomersTable = ({ rows, loading, error, refetch }: Props) => {
   const [search, setSearch] = useState("");
   const [phone, setPhone] = useState("");
   const [ic, setIc] = useState("");
@@ -229,20 +226,19 @@ export const MyCustomersTable = ({ rows, loading, error, onEdit, refetch }: Prop
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Applicant ID</TableHead>
+                  <TableHead className="w-[110px]">Applicant ID</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Mobile</TableHead>
-                  <TableHead>IC</TableHead>
                   <TableHead>Service</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Follow-up</TableHead>
-                  <TableHead>Remarks</TableHead>
                   <TableHead>Registered</TableHead>
-                  <TableHead>Updated</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-right sticky right-0 bg-card shadow-[-4px_0_8px_-4px_hsl(var(--foreground)/0.06)]">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -250,11 +246,15 @@ export const MyCustomersTable = ({ rows, loading, error, onEdit, refetch }: Prop
                   const overdue = isOverdue(c.next_follow_up_date);
                   const dueToday = isToday(c.next_follow_up_date);
                   return (
-                    <TableRow key={c.id} className={overdue ? "bg-destructive/5" : dueToday ? "bg-amber-500/5" : ""}>
+                    <TableRow
+                      key={c.id}
+                      className={`cursor-pointer hover:bg-surface-muted/50 ${overdue ? "bg-destructive/5" : dueToday ? "bg-amber-500/5" : ""}`}
+                      onClick={() => setDetails(c)}
+                    >
                       <TableCell className="font-mono text-xs">{c.applicant_id ?? "—"}</TableCell>
-                      <TableCell>
-                        <div className="font-medium text-charcoal">{c.full_name ?? "—"}</div>
-                        <div className="flex gap-1 mt-0.5">
+                      <TableCell className="max-w-[200px]">
+                        <div className="font-medium text-charcoal truncate">{c.full_name ?? "—"}</div>
+                        <div className="flex gap-1 mt-0.5 flex-wrap">
                           {c.priority_status === "walk_in" && (
                             <Badge variant="outline" className="text-[10px] px-1 py-0 bg-amber-500/10 text-amber-700 border-amber-500/20">walk-in</Badge>
                           )}
@@ -266,10 +266,11 @@ export const MyCustomersTable = ({ rows, loading, error, onEdit, refetch }: Prop
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs">{c.phone_number ?? "—"}</TableCell>
-                      <TableCell className="font-mono text-xs">{c.ic_number ?? "—"}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{c.phone_number ?? "—"}</TableCell>
                       <TableCell className="capitalize text-xs">{c.user_role ?? "—"}</TableCell>
-                      <TableCell className="capitalize text-xs">{c.location_choice ?? c.state ?? "—"}</TableCell>
+                      <TableCell className="capitalize text-xs max-w-[140px] truncate" title={c.location_choice ?? c.state ?? ""}>
+                        {c.location_choice ?? c.state ?? "—"}
+                      </TableCell>
                       <TableCell className="capitalize text-xs">{c.account_status ?? "—"}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={statusBadgeClass(c.customer_status)}>
@@ -281,26 +282,21 @@ export const MyCustomersTable = ({ rows, loading, error, onEdit, refetch }: Prop
                           {(c.priority_status ?? "normal").replace(/_/g, " ")}
                         </Badge>
                       </TableCell>
-                      <TableCell className={overdue ? "text-destructive font-medium text-xs" : dueToday ? "text-amber-700 dark:text-amber-400 font-medium text-xs" : "text-xs"}>
+                      <TableCell className={overdue ? "text-destructive font-medium text-xs whitespace-nowrap" : dueToday ? "text-amber-700 dark:text-amber-400 font-medium text-xs whitespace-nowrap" : "text-xs whitespace-nowrap"}>
                         {c.next_follow_up_date ? new Date(c.next_follow_up_date).toLocaleDateString() : "—"}
                       </TableCell>
-                      <TableCell className="max-w-[180px]">
-                        <div className="text-xs text-muted-foreground truncate" title={c.remarks ?? ""}>
-                          {c.remarks ?? "—"}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs">
+                      <TableCell className="text-xs whitespace-nowrap">
                         {(c.registration_date ?? c.created_at)
                           ? new Date((c.registration_date ?? c.created_at) as string).toLocaleDateString()
                           : "—"}
                       </TableCell>
-                      <TableCell className="text-xs">
-                        {c.updated_at ? new Date(c.updated_at).toLocaleDateString() : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell
+                        className="text-right sticky right-0 bg-card shadow-[-4px_0_8px_-4px_hsl(var(--foreground)/0.06)]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <div className="flex justify-end gap-1">
-                          <Button size="icon" variant="ghost" title="View details" onClick={() => setDetails(c)}>
-                            <Eye className="w-4 h-4" />
+                          <Button size="sm" variant="outline" onClick={() => setDetails(c)}>
+                            <Eye className="w-3.5 h-3.5 mr-1" /> View
                           </Button>
                           <Button asChild size="icon" variant="ghost" title="Call">
                             <a href={telLink(c.phone_number)}><Phone className="w-4 h-4" /></a>
@@ -315,9 +311,6 @@ export const MyCustomersTable = ({ rows, loading, error, onEdit, refetch }: Prop
                           </Button>
                           <Button size="icon" variant="ghost" title="Mark as contacted" onClick={() => markContacted(c)}>
                             <CheckCircle2 className="w-4 h-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" title="Update status / remark / follow-up" onClick={() => onEdit(c)}>
-                            <Pencil className="w-4 h-4" />
                           </Button>
                         </div>
                       </TableCell>
@@ -339,50 +332,13 @@ export const MyCustomersTable = ({ rows, loading, error, onEdit, refetch }: Prop
         </Card>
       )}
 
-      {/* Details dialog */}
-      <Dialog open={!!details} onOpenChange={(o) => !o && setDetails(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{details?.full_name ?? "Customer details"}</DialogTitle>
-          </DialogHeader>
-          {details && (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <Field label="Applicant ID" value={details.applicant_id} mono />
-              <Field label="IC number" value={details.ic_number} mono />
-              <Field label="Phone" value={details.phone_number} />
-              <Field label="Service" value={details.user_role} />
-              <Field label="Application category" value={details.account_status} />
-              <Field label="Location" value={details.location_choice ?? details.state} />
-              <Field label="Status" value={details.customer_status} />
-              <Field label="Priority" value={details.priority_status} />
-              <Field label="Follow-up" value={details.next_follow_up_date ? new Date(details.next_follow_up_date).toLocaleDateString() : "—"} />
-              <Field label="Registered" value={(details.registration_date ?? details.created_at) ? new Date((details.registration_date ?? details.created_at) as string).toLocaleDateString() : "—"} />
-              <div className="col-span-2">
-                <div className="text-xs text-muted-foreground">Remarks</div>
-                <div className="text-sm whitespace-pre-wrap">{details.remarks ?? "—"}</div>
-              </div>
-              <div className="col-span-2 flex gap-2 pt-2">
-                <Button size="sm" onClick={() => { onEdit(details); setDetails(null); }}>
-                  <Pencil className="w-3 h-3 mr-1" /> Edit
-                </Button>
-                <Button asChild size="sm" variant="outline">
-                  <a href={telLink(details.phone_number)}><Phone className="w-3 h-3 mr-1" /> Call</a>
-                </Button>
-                <Button asChild size="sm" variant="outline">
-                  <a href={waLink(details.phone_number)} target="_blank" rel="noreferrer"><MessageCircle className="w-3 h-3 mr-1" /> WhatsApp</a>
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <CustomerDetailDrawer
+        customer={details}
+        open={!!details}
+        onOpenChange={(o) => !o && setDetails(null)}
+        editable
+        onSaved={refetch}
+      />
     </div>
   );
 };
-
-const Field = ({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) => (
-  <div>
-    <div className="text-xs text-muted-foreground">{label}</div>
-    <div className={`text-sm ${mono ? "font-mono" : ""} text-charcoal`}>{value ?? "—"}</div>
-  </div>
-);

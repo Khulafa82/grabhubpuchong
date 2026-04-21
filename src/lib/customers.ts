@@ -18,6 +18,34 @@ export interface Customer {
   registration_date?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  // Extended fields used by the full detail drawer (all optional — depend on row)
+  email_address?: string | null;
+  eligibility_status?: string | null;
+  blue_ic_status?: boolean | null;
+  license_type?: string | null;
+  criminal_record_status?: string | null;
+  walk_in_flag?: boolean | null;
+  duplicate_flag?: boolean | null;
+  duplicate_reason?: string | null;
+  psv_license_status?: string | null;
+  has_car?: boolean | null;
+  car_model?: string | null;
+  car_year?: string | number | null;
+  vehicle_type?: string | null;
+  vehicle_model?: string | null;
+  vehicle_manufacturer?: string | null;
+  insurance_status?: string | null;
+  insurance_name?: string | null;
+  insurance_expired_date?: string | null;
+  insurance_notes?: string | null;
+  has_motorcycle?: boolean | null;
+  motorcycle_details?: string | null;
+  psv_class_id?: string | null;
+  psv_class?: string | null;
+  psv_class_date?: string | null;
+  psv_class_location?: string | null;
+  bolt_url?: string | null;
+  next_follow_up_time?: string | null;
 }
 
 export const CUSTOMER_STATUS_OPTIONS = [

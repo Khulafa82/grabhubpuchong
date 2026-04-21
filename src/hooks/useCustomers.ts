@@ -7,8 +7,9 @@ interface Options {
   scope: "mine" | "all";
 }
 
-const SELECT_COLUMNS =
-  "id, applicant_id, full_name, phone_number, ic_number, user_role, location_choice, state, customer_status, priority_status, account_status, next_follow_up_date, remarks, admin_in_charge, assignment_status, registration_date, created_at, updated_at";
+// Pull all columns so the full detail drawer can render every field that
+// exists in the customers table without needing extra round-trips.
+const SELECT_COLUMNS = "*";
 
 export const useCustomers = ({ adminId, scope }: Options) => {
   const [data, setData] = useState<Customer[]>([]);

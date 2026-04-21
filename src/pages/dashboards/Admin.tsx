@@ -18,8 +18,6 @@ import { MyCustomersTable } from "@/components/admin/MyCustomersTable";
 import { ContactListView } from "@/components/admin/ContactListView";
 import { CustomerActionsDialog } from "@/components/admin/CustomerActionsDialog";
 import { Customer, isOverdue, isToday, telLink, waLink, statusBadgeClass } from "@/lib/customers";
-import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
 import BiodataSettings from "@/components/dashboard/BiodataSettings";
 import LeaveApplication from "./admin/LeaveApplication";
 import { PsvCalendarPage } from "@/components/psv/PsvCalendarPage";
@@ -157,7 +155,7 @@ const Overview = () => {
 const MyCustomersPage = () => {
   const myId = useMyId();
   const { data, loading, error, refetch } = useCustomers({ adminId: myId, scope: "mine" });
-  const [active, setActive] = useState<Customer | null>(null);
+  const [, setActive] = useState<Customer | null>(null);
 
   const stats = useMemo(() => {
     const today = data.filter((c) => isToday(c.next_follow_up_date)).length;
@@ -198,14 +196,6 @@ const MyCustomersPage = () => {
         onEdit={setActive}
         refetch={refetch}
       />
-
-      <CustomerActionsDialog
-        key={active?.id ?? "none"}
-        customer={active}
-        open={!!active}
-        onOpenChange={(o) => !o && setActive(null)}
-        onSaved={refetch}
-      />
     </div>
   );
 };
@@ -213,7 +203,7 @@ const MyCustomersPage = () => {
 const AllCustomersPage = () => {
   const myId = useMyId();
   const { data, loading, error, refetch } = useCustomers({ scope: "all" });
-  const [active, setActive] = useState<Customer | null>(null);
+  const [, setActive] = useState<Customer | null>(null);
   const mineCount = useMemo(() => data.filter((c) => c.admin_in_charge === myId).length, [data, myId]);
 
   return (
@@ -234,13 +224,6 @@ const AllCustomersPage = () => {
         myId={myId}
         onEdit={setActive}
         refetch={refetch}
-      />
-      <CustomerActionsDialog
-        key={active?.id ?? "none"}
-        customer={active}
-        open={!!active}
-        onOpenChange={(o) => !o && setActive(null)}
-        onSaved={refetch}
       />
     </div>
   );

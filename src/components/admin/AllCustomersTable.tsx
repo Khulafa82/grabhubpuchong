@@ -11,18 +11,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Phone, MessageCircle, Pencil, Loader2, Eye, Copy, CheckCircle2,
-  Search, X, AlertTriangle, Lock,
+  Phone, MessageCircle, Loader2, Eye, Search, X, Lock,
 } from "lucide-react";
 import {
   Customer, statusBadgeClass, priorityBadgeClass, isOverdue, isToday,
   telLink, waLink, CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
 } from "@/lib/customers";
-import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { CustomerDetailDrawer } from "./CustomerDetailDrawer";
 
 interface Props {
   rows: Customer[];
@@ -36,7 +31,7 @@ interface Props {
 const PAGE_SIZE = 25;
 
 export const AllCustomersTable = ({
-  rows, loading, error, myId, onEdit, refetch,
+  rows, loading, error, myId, refetch,
 }: Props) => {
   const [search, setSearch] = useState("");
   const [phone, setPhone] = useState("");
@@ -96,21 +91,6 @@ export const AllCustomersTable = ({
     setService("all"); setCategory("all"); setLocation("all");
     setStatus("all"); setPriority("all");
     setFrom(""); setTo(""); setPage(1);
-  };
-
-  const copyPhone = (p?: string | null) => {
-    if (!p) return;
-    navigator.clipboard?.writeText(p);
-    toast.success("Phone copied");
-  };
-
-  const markContacted = async (c: Customer) => {
-    const { error: err } = await supabase
-      .from("customers")
-      .update({ customer_status: "contacted" })
-      .eq("id", c.id);
-    if (err) toast.error(err.message);
-    else { toast.success("Marked as contacted"); refetch(); }
   };
 
   return (
@@ -221,20 +201,20 @@ export const AllCustomersTable = ({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Applicant ID</TableHead>
+                  <TableHead className="w-[110px]">Applicant ID</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Mobile</TableHead>
-                  <TableHead>IC</TableHead>
-                  <TableHead>Location</TableHead>
                   <TableHead>Service</TableHead>
+                  <TableHead>Location</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Follow-up</TableHead>
-                  <TableHead>Remarks</TableHead>
-                  <TableHead>Registered</TableHead>
                   <TableHead>Assigned</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Registered</TableHead>
+                  <TableHead className="text-right sticky right-0 bg-card shadow-[-4px_0_8px_-4px_hsl(var(--foreground)/0.06)]">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -243,11 +223,15 @@ export const AllCustomersTable = ({
                   const dueToday = isToday(c.next_follow_up_date);
                   const editable = !!myId && c.admin_in_charge === myId;
                   return (
-                    <TableRow key={c.id}>
+                    <TableRow
+                      key={c.id}
+                      className="cursor-pointer hover:bg-surface-muted/50"
+                      onClick={() => setDetails(c)}
+                    >
                       <TableCell className="font-mono text-xs">{c.applicant_id ?? "—"}</TableCell>
-                      <TableCell>
-                        <div className="font-medium text-charcoal">{c.full_name ?? "—"}</div>
-                        <div className="flex gap-1 mt-0.5">
+                      <TableCell className="max-w-[200px]">
+                        <div className="font-medium text-charcoal truncate">{c.full_name ?? "—"}</div>
+                        <div className="flex gap-1 mt-0.5 flex-wrap">
                           {c.priority_status === "walk_in" && (
                             <Badge variant="outline" className="text-[10px] px-1 py-0 bg-amber-500/10 text-amber-700 border-amber-500/20">walk-in</Badge>
                           )}
@@ -259,10 +243,11 @@ export const AllCustomersTable = ({
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs">{c.phone_number ?? "—"}</TableCell>
-                      <TableCell className="font-mono text-xs">{c.ic_number ?? "—"}</TableCell>
-                      <TableCell className="capitalize text-xs">{c.location_choice ?? c.state ?? "—"}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{c.phone_number ?? "—"}</TableCell>
                       <TableCell className="capitalize text-xs">{c.user_role ?? "—"}</TableCell>
+                      <TableCell className="capitalize text-xs max-w-[140px] truncate" title={c.location_choice ?? c.state ?? ""}>
+                        {c.location_choice ?? c.state ?? "—"}
+                      </TableCell>
                       <TableCell className="capitalize text-xs">{c.account_status ?? "—"}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={statusBadgeClass(c.customer_status)}>
@@ -274,20 +259,10 @@ export const AllCustomersTable = ({
                           {(c.priority_status ?? "normal").replace(/_/g, " ")}
                         </Badge>
                       </TableCell>
-                      <TableCell className={overdue ? "text-destructive font-medium text-xs" : dueToday ? "text-amber-700 dark:text-amber-400 font-medium text-xs" : "text-xs"}>
+                      <TableCell className={overdue ? "text-destructive font-medium text-xs whitespace-nowrap" : dueToday ? "text-amber-700 dark:text-amber-400 font-medium text-xs whitespace-nowrap" : "text-xs whitespace-nowrap"}>
                         {c.next_follow_up_date ? new Date(c.next_follow_up_date).toLocaleDateString() : "—"}
                       </TableCell>
-                      <TableCell className="max-w-[180px]">
-                        <div className="text-xs text-muted-foreground truncate" title={c.remarks ?? ""}>
-                          {c.remarks ?? "—"}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {(c.registration_date ?? c.created_at)
-                          ? new Date((c.registration_date ?? c.created_at) as string).toLocaleDateString()
-                          : "—"}
-                      </TableCell>
-                      <TableCell className="text-xs">
+                      <TableCell className="text-xs max-w-[140px] truncate">
                         {editable ? (
                           <Badge variant="outline" className="bg-brand/10 text-brand border-brand/20">You</Badge>
                         ) : c.assigned_admin_name ? (
@@ -296,10 +271,18 @@ export const AllCustomersTable = ({
                           <span className="text-muted-foreground italic">unassigned</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {(c.registration_date ?? c.created_at)
+                          ? new Date((c.registration_date ?? c.created_at) as string).toLocaleDateString()
+                          : "—"}
+                      </TableCell>
+                      <TableCell
+                        className="text-right sticky right-0 bg-card shadow-[-4px_0_8px_-4px_hsl(var(--foreground)/0.06)]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <div className="flex justify-end gap-1">
-                          <Button size="icon" variant="ghost" title="View details" onClick={() => setDetails(c)}>
-                            <Eye className="w-4 h-4" />
+                          <Button size="sm" variant="outline" onClick={() => setDetails(c)}>
+                            <Eye className="w-3.5 h-3.5 mr-1" /> View
                           </Button>
                           <Button asChild size="icon" variant="ghost" title="Call">
                             <a href={telLink(c.phone_number)}><Phone className="w-4 h-4" /></a>
@@ -309,22 +292,10 @@ export const AllCustomersTable = ({
                               <MessageCircle className="w-4 h-4" />
                             </a>
                           </Button>
-                          <Button size="icon" variant="ghost" title="Copy phone" onClick={() => copyPhone(c.phone_number)}>
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                          {editable ? (
-                            <>
-                              <Button size="icon" variant="ghost" title="Mark as contacted" onClick={() => markContacted(c)}>
-                                <CheckCircle2 className="w-4 h-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" title="Update / remark / follow-up" onClick={() => onEdit(c)}>
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <Button size="icon" variant="ghost" title="Read-only — not assigned to you" disabled>
-                              <Lock className="w-4 h-4" />
-                            </Button>
+                          {!editable && (
+                            <span title="Read-only — not assigned to you" className="inline-flex items-center px-1 text-muted-foreground">
+                              <Lock className="w-3.5 h-3.5" />
+                            </span>
                           )}
                         </div>
                       </TableCell>
@@ -334,7 +305,6 @@ export const AllCustomersTable = ({
               </TableBody>
             </Table>
           </div>
-          {/* Pagination */}
           {pageCount > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t text-xs">
               <span className="text-muted-foreground">Page {safePage} of {pageCount}</span>
@@ -347,75 +317,13 @@ export const AllCustomersTable = ({
         </Card>
       )}
 
-      {/* Read-only / details dialog */}
-      <Dialog open={!!details} onOpenChange={(o) => !o && setDetails(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {details?.full_name ?? "Customer details"}
-              {details && details.admin_in_charge !== myId && (
-                <Badge variant="outline" className="bg-muted text-muted-foreground">
-                  <Lock className="w-3 h-3 mr-1" /> Read-only
-                </Badge>
-              )}
-            </DialogTitle>
-          </DialogHeader>
-          {details && (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <Field label="Applicant ID" value={details.applicant_id} mono />
-              <Field label="IC number" value={details.ic_number} mono />
-              <Field label="Phone" value={details.phone_number} />
-              <Field label="Service" value={details.user_role} />
-              <Field label="Application category" value={details.account_status} />
-              <Field label="Location" value={details.location_choice ?? details.state} />
-              <Field label="Status" value={details.customer_status} />
-              <Field label="Priority" value={details.priority_status} />
-              <Field
-                label="Next follow-up"
-                value={details.next_follow_up_date ? new Date(details.next_follow_up_date).toLocaleDateString() : null}
-              />
-              <Field
-                label="Registered"
-                value={(details.registration_date ?? details.created_at)
-                  ? new Date((details.registration_date ?? details.created_at) as string).toLocaleString()
-                  : null}
-              />
-              <Field
-                label="Assigned admin"
-                value={details.admin_in_charge === myId ? "You" : details.assigned_admin_name ?? "Unassigned"}
-              />
-              <Field label="Assignment status" value={details.assignment_status} />
-              <div className="col-span-2">
-                <Label className="text-xs text-muted-foreground">Remarks</Label>
-                <div className="mt-1 p-3 rounded-md bg-surface-muted text-sm whitespace-pre-wrap min-h-[60px]">
-                  {details.remarks ?? "—"}
-                </div>
-              </div>
-              {isOverdue(details.next_follow_up_date) && (
-                <div className="col-span-2 flex items-center gap-2 text-xs text-destructive">
-                  <AlertTriangle className="w-4 h-4" /> This customer's follow-up is overdue.
-                </div>
-              )}
-              {details.admin_in_charge === myId && (
-                <div className="col-span-2 flex justify-end pt-2">
-                  <Button onClick={() => { onEdit(details); setDetails(null); }}>
-                    <Pencil className="w-4 h-4 mr-1" /> Edit / Update
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <CustomerDetailDrawer
+        customer={details}
+        open={!!details}
+        onOpenChange={(o) => !o && setDetails(null)}
+        editable={!!myId && details?.admin_in_charge === myId}
+        onSaved={refetch}
+      />
     </div>
   );
 };
-
-const Field = ({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) => (
-  <div>
-    <Label className="text-xs text-muted-foreground">{label}</Label>
-    <div className={`mt-0.5 text-sm text-charcoal ${mono ? "font-mono" : ""} capitalize`}>
-      {value ? String(value).replace(/_/g, " ") : "—"}
-    </div>
-  </div>
-);
