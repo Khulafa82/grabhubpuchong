@@ -290,6 +290,12 @@ export const CustomerDetailDrawer = ({
                   <AlertTriangle className="w-3 h-3 mr-1" /> duplicate
                 </Badge>
               )}
+              <Badge
+                variant="outline"
+                className={boltStatusBadgeClass(customer.bolt_status ?? "bolt_submitted")}
+              >
+                {BOLT_STATUS_LABEL[customer.bolt_status ?? "bolt_submitted"]}
+              </Badge>
             </div>
 
             {/* Quick actions (always shown) */}
