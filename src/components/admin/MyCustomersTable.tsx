@@ -11,14 +11,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Phone, MessageCircle, Loader2, Eye, Copy, CheckCircle2, Search, X,
+  Loader2, Search, X, Pencil,
 } from "lucide-react";
 import {
   Customer, statusBadgeClass, priorityBadgeClass, isOverdue, isToday,
-  telLink, waLink, CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
+  CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
 } from "@/lib/customers";
-import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
 import { CustomerDetailDrawer } from "./CustomerDetailDrawer";
 
 interface Props {
