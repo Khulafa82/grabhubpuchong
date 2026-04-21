@@ -209,6 +209,7 @@ export const CustomerDetailDrawer = ({
       psv_class_location: form.psv_class_location || null,
       bolt_url: form.bolt_url || null,
       remarks: form.remarks || null,
+      bolt_status: form.bolt_status || "bolt_submitted",
       customer_status: form.customer_status || null,
       priority_status: form.priority_status || null,
       next_follow_up_date: form.next_follow_up_date || null,
