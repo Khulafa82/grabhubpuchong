@@ -41,6 +41,40 @@ export const PSV_WORKFLOW = {
   RESCHEDULED: "rescheduled_psv",
 } as const;
 
+export const PSV_WORKFLOW_VALUES = [
+  PSV_WORKFLOW.WAITING,
+  PSV_WORKFLOW.ASSIGNED,
+  PSV_WORKFLOW.ATTENDED,
+  PSV_WORKFLOW.COMPLETED,
+  PSV_WORKFLOW.FAILED,
+  PSV_WORKFLOW.RESCHEDULED,
+] as const;
+
+export const psvWorkflowBadgeClass = (s?: string | null) => {
+  switch (s) {
+    case PSV_WORKFLOW.ATTENDED:
+    case PSV_WORKFLOW.COMPLETED:
+      return "bg-brand/10 text-brand border-brand/20";
+    case PSV_WORKFLOW.FAILED:
+      return "bg-destructive/10 text-destructive border-destructive/20";
+    case PSV_WORKFLOW.RESCHEDULED:
+      return "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-400";
+    case PSV_WORKFLOW.ASSIGNED:
+      return "bg-charcoal/10 text-charcoal border-charcoal/20";
+    case PSV_WORKFLOW.WAITING:
+    default:
+      return "bg-muted text-muted-foreground border-border";
+  }
+};
+
+export const CLASS_STATUS_OPTIONS = [
+  "Open",
+  "Almost Full",
+  "Full",
+  "Completed",
+  "Cancelled",
+] as const;
+
 export const ATTENDANCE_STATUSES = ["Pending", "Attended", "Absent", "Rescheduled"] as const;
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number];
 

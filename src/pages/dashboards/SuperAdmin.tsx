@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import BiodataSettings from "@/components/dashboard/BiodataSettings";
 import LeaveManagement from "./super/LeaveManagement";
+import { PsvCalendarPage } from "@/components/psv/PsvCalendarPage";
 
 const items = [
   { label: "Dashboard Overview", to: "/super-admin", icon: LayoutDashboard },
@@ -94,7 +95,7 @@ const SuperAdmin = () => (
       <Route path="assignments" element={<PagePlaceholder title="Assignment Control Center" />} />
       <Route path="analytics" element={<PagePlaceholder title="Boss Analytics View" />} />
       <Route path="it" element={<PagePlaceholder title="IT Operations View" />} />
-      <Route path="psv" element={<PagePlaceholder title="PSV Calendar Management" />} />
+      <Route path="psv" element={<PsvCalendarPage role="super_admin" title="PSV Calendar Management" />} />
       <Route path="logs" element={<PagePlaceholder title="Global Logs & Audit Trail" />} />
       <Route path="leave" element={<LeaveManagement />} />
       <Route path="security" element={<PagePlaceholder title="Security & Session Control" />} />

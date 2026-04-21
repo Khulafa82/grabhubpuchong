@@ -62,7 +62,7 @@ export const AssignCustomerDialog = ({
         .select("id, full_name, phone_number, applicant_id, customer_status, admin_in_charge")
         .in("customer_status", ELIGIBLE_STATUSES)
         .order("updated_at", { ascending: false, nullsFirst: false });
-      // Admin sees only their own customers; super_admin sees all.
+      // Admin sees only their own customers; super_admin / IT see all.
       if (role === "admin" && myId) q = q.eq("admin_in_charge", myId);
       const { data, error } = await q.limit(200);
       if (cancelled) return;

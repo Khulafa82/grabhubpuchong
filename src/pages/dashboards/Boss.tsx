@@ -17,6 +17,7 @@ import BossAssignments from "./boss/Assignments";
 import BossLeave from "./boss/LeaveApproval";
 import BossPerformance from "./boss/Performance";
 import BossSettings from "./boss/Settings";
+import { PsvCalendarPage } from "@/components/psv/PsvCalendarPage";
 
 const items = [
   { label: "Dashboard Overview", to: "/boss", icon: LayoutDashboard },
@@ -24,6 +25,7 @@ const items = [
   { label: "Admin Performance", to: "/boss/performance", icon: BarChart3 },
   { label: "Leave Approval", to: "/boss/leave", icon: CalendarCheck },
   { label: "Customer Assignment", to: "/boss/assignments", icon: UsersRound },
+  { label: "PSV Calendar", to: "/boss/psv-calendar", icon: CalendarCheck },
   { label: "Reports & Analytics", to: "/boss/reports", icon: FileBarChart },
   { label: "Biodata & Settings", to: "/boss/settings", icon: Settings },
 ];
@@ -253,6 +255,7 @@ const Boss = () => (
       <Route path="performance" element={<BossPerformance />} />
       <Route path="leave" element={<BossLeave />} />
       <Route path="assignments" element={<BossAssignments />} />
+      <Route path="psv-calendar" element={<PsvCalendarPage role="boss" />} />
       <Route path="reports" element={<BossReports />} />
       <Route path="settings" element={<BossSettings />} />
     </Route>
