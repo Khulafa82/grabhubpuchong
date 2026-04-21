@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LogOut, Bell, Search, Menu, Loader2 } from "lucide-react";
+import { LogOut, Bell, Search, Menu, Loader2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useState, type ComponentType } from "react";
 import { Logo } from "@/components/site/Logo";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const initialsOf = (name?: string | null) =>
   (name ?? "")
@@ -26,6 +27,7 @@ interface Props {
 
 export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const { signOut, profile } = useAuth();
   const navigate = useNavigate();
@@ -47,46 +49,85 @@ export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
     <div className="min-h-screen flex bg-surface w-full">
       {/* Sidebar */}
       <aside
-        className={`${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 fixed lg:sticky top-0 left-0 z-40 h-screen w-64 bg-charcoal text-charcoal-foreground flex flex-col transition-transform`}
+        className={`${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 fixed lg:sticky top-0 left-0 z-40 h-screen ${collapsed ? "w-16" : "w-64"} bg-charcoal text-charcoal-foreground flex flex-col transition-all duration-200`}
       >
-        <div className="h-16 flex items-center px-5 border-b border-charcoal-foreground/10">
-          <Logo light />
-        </div>
-        <div className="px-5 py-4 border-b border-charcoal-foreground/10">
-          <div className="text-[10px] uppercase tracking-wider text-charcoal-foreground/40">Role</div>
-          <div className="text-sm font-semibold mt-0.5">{roleLabel}</div>
-        </div>
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {items.map((it) => (
-            <NavLink
-              key={it.to}
-              to={it.to}
-              end
-              onClick={() => setOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  isActive
-                    ? "bg-brand text-brand-foreground font-medium"
-                    : "text-charcoal-foreground/70 hover:bg-charcoal-foreground/5 hover:text-charcoal-foreground"
-                }`
-              }
-            >
-              <it.icon className="w-4 h-4" />
-              {it.label}
-            </NavLink>
-          ))}
-        </nav>
-        <div className="p-3 border-t border-charcoal-foreground/10">
-          <Button
-            variant="ghost"
-            disabled={signingOut}
-            onClick={handleSignOut}
-            className="w-full justify-start text-charcoal-foreground/70 hover:text-charcoal-foreground hover:bg-charcoal-foreground/5"
+        <div className={`h-16 flex items-center border-b border-charcoal-foreground/10 ${collapsed ? "justify-center px-2" : "justify-between px-5"}`}>
+          {!collapsed && <Logo light />}
+          <button
+            onClick={() => setCollapsed((c) => !c)}
+            className="hidden lg:inline-flex items-center justify-center w-8 h-8 rounded-md text-charcoal-foreground/60 hover:bg-charcoal-foreground/10 hover:text-charcoal-foreground transition-colors"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {signingOut ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <LogOut className="w-4 h-4 mr-2" />}
-            {signingOut ? "Signing out..." : "Sign out"}
-          </Button>
+            {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+          </button>
         </div>
+        {!collapsed && (
+          <div className="px-5 py-4 border-b border-charcoal-foreground/10">
+            <div className="text-[10px] uppercase tracking-wider text-charcoal-foreground/40">Role</div>
+            <div className="text-sm font-semibold mt-0.5">{roleLabel}</div>
+          </div>
+        )}
+        <TooltipProvider delayDuration={0}>
+          <nav className={`flex-1 overflow-y-auto py-4 space-y-1 ${collapsed ? "px-2" : "px-3"}`}>
+            {items.map((it) => {
+              const link = (
+                <NavLink
+                  key={it.to}
+                  to={it.to}
+                  end
+                  onClick={() => setOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center ${collapsed ? "justify-center px-0" : "gap-3 px-3"} py-2.5 rounded-lg text-sm transition-colors ${
+                      isActive
+                        ? "bg-brand text-brand-foreground font-medium"
+                        : "text-charcoal-foreground/70 hover:bg-charcoal-foreground/5 hover:text-charcoal-foreground"
+                    }`
+                  }
+                >
+                  <it.icon className="w-4 h-4 shrink-0" />
+                  {!collapsed && <span>{it.label}</span>}
+                </NavLink>
+              );
+              return collapsed ? (
+                <Tooltip key={it.to}>
+                  <TooltipTrigger asChild>{link}</TooltipTrigger>
+                  <TooltipContent side="right">{it.label}</TooltipContent>
+                </Tooltip>
+              ) : (
+                link
+              );
+            })}
+          </nav>
+          <div className={`border-t border-charcoal-foreground/10 ${collapsed ? "p-2" : "p-3"}`}>
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={signingOut}
+                    onClick={handleSignOut}
+                    className="w-full text-charcoal-foreground/70 hover:text-charcoal-foreground hover:bg-charcoal-foreground/5"
+                    aria-label="Sign out"
+                  >
+                    {signingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">{signingOut ? "Signing out..." : "Sign out"}</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Button
+                variant="ghost"
+                disabled={signingOut}
+                onClick={handleSignOut}
+                className="w-full justify-start text-charcoal-foreground/70 hover:text-charcoal-foreground hover:bg-charcoal-foreground/5"
+              >
+                {signingOut ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <LogOut className="w-4 h-4 mr-2" />}
+                {signingOut ? "Signing out..." : "Sign out"}
+              </Button>
+            )}
+          </div>
+        </TooltipProvider>
       </aside>
 
       {open && <div className="fixed inset-0 bg-black/40 z-30 lg:hidden" onClick={() => setOpen(false)} />}
