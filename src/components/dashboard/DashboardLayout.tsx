@@ -68,7 +68,7 @@ export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
           </div>
         )}
         <TooltipProvider delayDuration={0}>
-          <nav className={`flex-1 overflow-y-auto py-4 ${collapsed ? "px-2 space-y-2" : "px-3 space-y-1"}`}>
+          <nav className={`flex-1 overflow-y-auto py-4 ${collapsed ? "px-2 space-y-3" : "px-3 space-y-1"}`}>
             {items.map((it) => {
               const link = (
                 <NavLink
@@ -77,7 +77,7 @@ export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
                   end
                   onClick={() => setOpen(false)}
                   className={({ isActive }) =>
-                    `flex items-center ${collapsed ? "justify-center px-0" : "gap-3 px-3"} py-2.5 rounded-lg text-sm transition-colors ${
+                    `flex items-center ${collapsed ? "justify-center h-11 px-0 py-0" : "gap-3 px-3 py-2.5"} rounded-lg text-sm transition-colors ${
                       isActive
                         ? "bg-brand text-brand-foreground font-medium"
                         : "text-charcoal-foreground/70 hover:bg-charcoal-foreground/5 hover:text-charcoal-foreground"
