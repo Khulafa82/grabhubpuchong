@@ -61,35 +61,33 @@ export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
     <div className="min-h-screen flex bg-surface w-full">
       {/* Sidebar */}
       <aside
-        className={`${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 fixed lg:sticky top-0 left-0 z-40 h-screen ${collapsed ? "lg:w-16 w-64" : "w-64"} bg-charcoal text-charcoal-foreground flex flex-col transition-[width,transform] duration-200 ease-out`}
+        data-collapsed={collapsed ? "true" : "false"}
+        className={`group/sidebar ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 fixed lg:sticky top-0 left-0 z-40 h-screen w-64 lg:data-[collapsed=true]:w-16 bg-charcoal text-charcoal-foreground flex flex-col overflow-hidden transition-[width,transform] duration-200 ease-out`}
       >
-        <div className={`h-16 flex items-center border-b border-charcoal-foreground/10 ${collapsed ? "lg:justify-center lg:px-0 px-5" : "px-5"}`}>
-          {collapsed ? (
-            <>
-              <span className="hidden lg:inline-flex w-9 h-9 rounded-lg gradient-brand items-center justify-center text-brand-foreground font-bold text-sm">G</span>
-              <span className="lg:hidden"><Logo light /></span>
-            </>
-          ) : (
+        {/* Header / Logo */}
+        <div className="h-16 shrink-0 flex items-center border-b border-charcoal-foreground/10 px-5 lg:group-data-[collapsed=true]/sidebar:px-0 lg:group-data-[collapsed=true]/sidebar:justify-center">
+          {/* Full logo — hidden when collapsed on desktop */}
+          <div className="lg:group-data-[collapsed=true]/sidebar:hidden">
             <Logo light />
-          )}
+          </div>
+          {/* Compact mark — only when collapsed on desktop */}
+          <span className="hidden lg:group-data-[collapsed=true]/sidebar:inline-flex w-9 h-9 rounded-lg gradient-brand items-center justify-center text-brand-foreground font-bold text-sm">
+            G
+          </span>
         </div>
-        {!collapsed && (
-          <div className="px-5 py-4 border-b border-charcoal-foreground/10 lg:block">
-            <div className="text-[10px] uppercase tracking-wider text-charcoal-foreground/40">Role</div>
-            <div className="text-sm font-semibold mt-0.5">{roleLabel}</div>
-          </div>
-        )}
-        {collapsed && (
-          <div className="hidden lg:flex justify-center py-3 border-b border-charcoal-foreground/10">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-[10px] uppercase tracking-wider text-charcoal-foreground/50 font-semibold">{roleLabel.charAt(0)}</span>
-              </TooltipTrigger>
-              <TooltipContent side="right">{roleLabel}</TooltipContent>
-            </Tooltip>
-          </div>
-        )}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+
+        {/* Role label — full version */}
+        <div className="px-5 py-4 border-b border-charcoal-foreground/10 lg:group-data-[collapsed=true]/sidebar:hidden">
+          <div className="text-[10px] uppercase tracking-wider text-charcoal-foreground/40">Role</div>
+          <div className="text-sm font-semibold mt-0.5 truncate">{roleLabel}</div>
+        </div>
+        {/* Role marker — collapsed (desktop only) */}
+        <div className="hidden lg:group-data-[collapsed=true]/sidebar:flex justify-center py-3 border-b border-charcoal-foreground/10">
+          <span className="w-1.5 h-1.5 rounded-full bg-brand" aria-hidden="true" />
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 space-y-1">
           {items.map((it) => (
             <Tooltip key={it.to}>
               <TooltipTrigger asChild>
@@ -98,7 +96,7 @@ export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
                   end
                   onClick={() => setOpen(false)}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 ${collapsed ? "lg:justify-center lg:px-2" : ""} px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors lg:group-data-[collapsed=true]/sidebar:justify-center lg:group-data-[collapsed=true]/sidebar:px-0 lg:group-data-[collapsed=true]/sidebar:h-10 ${
                       isActive
                         ? "bg-brand text-brand-foreground font-medium"
                         : "text-charcoal-foreground/70 hover:bg-charcoal-foreground/5 hover:text-charcoal-foreground"
@@ -106,13 +104,15 @@ export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
                   }
                 >
                   <it.icon className="w-4 h-4 shrink-0" />
-                  <span className={collapsed ? "lg:hidden" : ""}>{it.label}</span>
+                  <span className="truncate lg:group-data-[collapsed=true]/sidebar:hidden">{it.label}</span>
                 </NavLink>
               </TooltipTrigger>
               {collapsed && <TooltipContent side="right" className="hidden lg:block">{it.label}</TooltipContent>}
             </Tooltip>
           ))}
         </nav>
+
+        {/* Footer / Sign out */}
         <div className="p-3 border-t border-charcoal-foreground/10">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -120,10 +120,16 @@ export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
                 variant="ghost"
                 disabled={signingOut}
                 onClick={handleSignOut}
-                className={`w-full ${collapsed ? "lg:justify-center lg:px-0 justify-start" : "justify-start"} text-charcoal-foreground/70 hover:text-charcoal-foreground hover:bg-charcoal-foreground/5`}
+                className="w-full justify-start lg:group-data-[collapsed=true]/sidebar:justify-center lg:group-data-[collapsed=true]/sidebar:px-0 text-charcoal-foreground/70 hover:text-charcoal-foreground hover:bg-charcoal-foreground/5"
               >
-                {signingOut ? <Loader2 className={`w-4 h-4 ${collapsed ? "lg:mr-0 mr-2" : "mr-2"} animate-spin`} /> : <LogOut className={`w-4 h-4 ${collapsed ? "lg:mr-0 mr-2" : "mr-2"}`} />}
-                <span className={collapsed ? "lg:hidden" : ""}>{signingOut ? "Signing out..." : "Sign out"}</span>
+                {signingOut ? (
+                  <Loader2 className="w-4 h-4 mr-2 lg:group-data-[collapsed=true]/sidebar:mr-0 animate-spin" />
+                ) : (
+                  <LogOut className="w-4 h-4 mr-2 lg:group-data-[collapsed=true]/sidebar:mr-0" />
+                )}
+                <span className="lg:group-data-[collapsed=true]/sidebar:hidden">
+                  {signingOut ? "Signing out..." : "Sign out"}
+                </span>
               </Button>
             </TooltipTrigger>
             {collapsed && <TooltipContent side="right" className="hidden lg:block">Sign out</TooltipContent>}
