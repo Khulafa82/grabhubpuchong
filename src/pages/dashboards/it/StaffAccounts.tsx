@@ -177,7 +177,7 @@ const StaffAccounts = () => {
           <div className="p-8 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Loading staff…</div>
         ) : error ? (
           <div className="p-8 text-sm text-destructive">Failed to load: {error}</div>
-        ) : rows.length === 0 ? (
+        ) : visibleRows.length === 0 ? (
           <div className="p-8 text-sm text-muted-foreground text-center">No staff accounts.</div>
         ) : (
           <div className="overflow-x-auto">
@@ -198,7 +198,7 @@ const StaffAccounts = () => {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((s) => {
+                {visibleRows.map((s) => {
                   const manage = canManageRow(s);
                   const restricted = s.role === "super_admin" && !isSuperAdmin;
                   return (
