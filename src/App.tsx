@@ -13,6 +13,7 @@ import Guide from "./pages/Guide";
 import Articles from "./pages/Articles";
 import Contact from "./pages/Contact";
 import StaffLogin from "./pages/StaffLogin";
+import FirstTimePasswordChange from "./pages/FirstTimePasswordChange";
 import Register from "./pages/Register";
 import RegistrationSuccess from "./pages/RegistrationSuccess";
 import Admin from "./pages/dashboards/Admin";
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/contact" element={<Contact />} />
             </Route>
             <Route path="/staff-login" element={<StaffLogin />} />
+            <Route path="/first-time-password-change" element={<FirstTimePasswordChange />} />
             <Route path="/register" element={<Register />} />
             <Route path="/registration-success" element={<RegistrationSuccess />} />
             <Route path="/admin/*" element={<ProtectedRoute role="admin"><Admin /></ProtectedRoute>} />

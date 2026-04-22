@@ -32,5 +32,9 @@ export const ProtectedRoute = ({ role, children }: Props) => {
     return <Navigate to={ROLE_TO_PATH[profile.role]} replace />;
   }
 
+  if (profile.first_login_completed === false) {
+    return <Navigate to="/first-time-password-change" replace />;
+  }
+
   return <>{children}</>;
 };
