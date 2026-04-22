@@ -332,7 +332,6 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList>
           <TabsTrigger value="profile" className="gap-2"><UserIcon className="w-4 h-4" /> Profile</TabsTrigger>
-          <TabsTrigger value="prefs" className="gap-2"><SettingsIcon className="w-4 h-4" /> Preferences</TabsTrigger>
           <TabsTrigger value="security" className="gap-2"><ShieldCheck className="w-4 h-4" /> Security</TabsTrigger>
         </TabsList>
 
@@ -392,70 +391,6 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
               <Button onClick={saveProfile} disabled={!profileDirty || saving} className="gradient-brand">
                 {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                 Save changes
-              </Button>
-            </div>
-          </Card>
-        </TabsContent>
-
-        {/* PREFERENCES TAB */}
-        <TabsContent value="prefs" className="space-y-6 m-0">
-          <Card className="p-6 space-y-5">
-            <h3 className="font-semibold text-charcoal">Appearance & language</h3>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Theme</Label>
-                <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="system">System</SelectItem>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Language</Label>
-                <Select value={language} onValueChange={setLanguage}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="ms">Bahasa Malaysia</SelectItem>
-                    <SelectItem value="zh">中文</SelectItem>
-                    <SelectItem value="ta">தமிழ்</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 space-y-4">
-            <h3 className="font-semibold text-charcoal">Notification preferences</h3>
-            <ToggleRow
-              icon={Mail}
-              label="Email notifications"
-              desc="Important updates and digests via email."
-              checked={notifEmail}
-              onChange={setNotifEmail}
-            />
-            <ToggleRow
-              icon={SettingsIcon}
-              label="In-app notifications"
-              desc="Show notifications inside the dashboard."
-              checked={notifInApp}
-              onChange={setNotifInApp}
-            />
-            <ToggleRow
-              icon={Phone}
-              label="SMS notifications"
-              desc="Critical alerts only, sent to your phone."
-              checked={notifSms}
-              onChange={setNotifSms}
-            />
-
-            <div className="flex justify-end pt-2">
-              <Button onClick={savePrefs} disabled={!prefsDirty || saving} className="gradient-brand">
-                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                Save preferences
               </Button>
             </div>
           </Card>
