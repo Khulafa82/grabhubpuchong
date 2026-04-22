@@ -370,7 +370,14 @@ const RoundRobinControl = () => {
             ) : nextAdmin?.admin_id ? (
               <>
                 <div className="text-lg font-semibold text-charcoal">{nextAdmin.admin_name ?? "—"}</div>
-                <div className="text-xs text-muted-foreground">Display order #{nextAdmin.display_order ?? "—"}</div>
+                <div className="text-xs text-muted-foreground">
+                  Display order #{
+                    (() => {
+                      const idx = sortedEligible.findIndex((m) => m.admin_id === nextAdmin.admin_id);
+                      return idx >= 0 ? idx + 1 : "—";
+                    })()
+                  }
+                </div>
               </>
             ) : (
               <div className="text-sm text-muted-foreground">No eligible admin for this profile.</div>
@@ -381,14 +388,14 @@ const RoundRobinControl = () => {
             <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-brand" /> Eligible admins</div>
             {previewLoading ? (
               <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading…</div>
-            ) : (matching ?? []).filter((m) => m.is_eligible).length === 0 ? (
+            ) : sortedEligible.length === 0 ? (
               <div className="text-sm text-muted-foreground">No eligible admins.</div>
             ) : (
               <ul className="space-y-1.5 text-sm">
-                {(matching ?? []).filter((m) => m.is_eligible).map((m) => (
+                {sortedEligible.map((m, idx) => (
                   <li key={m.admin_id} className="flex items-center justify-between">
                     <span className="text-charcoal">{m.admin_name ?? "—"}</span>
-                    <span className="text-xs text-muted-foreground">#{m.display_order ?? "—"}</span>
+                    <span className="text-xs text-muted-foreground">#{idx + 1}</span>
                   </li>
                 ))}
               </ul>
