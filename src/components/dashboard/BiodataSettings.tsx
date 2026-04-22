@@ -101,12 +101,6 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
         setPhone(p.phone_number ?? "");
         setEmergency(p.emergency_contact ?? "");
         setPhotoUrl(p.profile_photo_url ?? "");
-        setTheme(p.theme_preference ?? "system");
-        setLanguage(p.language_preference ?? "en");
-        const np = (p.notification_preferences ?? {}) as Record<string, unknown>;
-        setNotifEmail(np.email !== false);
-        setNotifInApp(np.in_app !== false);
-        setNotifSms(np.sms === true);
       }
       setLoading(false);
     })();
@@ -122,17 +116,6 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
       phone !== (data.phone_number ?? "") ||
       emergency !== (data.emergency_contact ?? "") ||
       photoUrl !== (data.profile_photo_url ?? ""));
-
-  const prefsDirty =
-    !!data &&
-    (theme !== (data.theme_preference ?? "system") ||
-      language !== (data.language_preference ?? "en") ||
-      JSON.stringify({ email: notifEmail, in_app: notifInApp, sms: notifSms }) !==
-        JSON.stringify({
-          email: (data.notification_preferences as any)?.email !== false,
-          in_app: (data.notification_preferences as any)?.in_app !== false,
-          sms: (data.notification_preferences as any)?.sms === true,
-        }));
 
   const saveProfile = async () => {
     if (!data) return;
