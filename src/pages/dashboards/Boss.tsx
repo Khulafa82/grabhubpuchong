@@ -1,7 +1,8 @@
 import { Routes, Route } from "react-router-dom";
+import { useState } from "react";
 import {
   LayoutDashboard, Users, BarChart3, CalendarCheck, UsersRound, FileBarChart, Settings, UserCog,
-  TrendingUp, Clock, AlertTriangle, Loader2, Car, Utensils, MapPin,
+  TrendingUp, Clock, AlertTriangle, Loader2, Car, Utensils, MapPin, Download,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -11,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useBossOverview } from "@/hooks/useBossOverview";
 import { statusBadgeClass } from "@/lib/customers";
+import { buildSectionedCsv, downloadCsv, todayStamp } from "@/lib/exportCsv";
+import { toast } from "sonner";
 import BossReports from "./boss/Reports";
 import BossCustomers from "./boss/CustomersList";
 import BossAssignments from "./boss/Assignments";
@@ -54,6 +57,7 @@ const Overview = () => {
   ]);
 
   const { recent, urgent, workload, pendingLeaves, breakdown, loading: dataLoading, error: dataError } = useBossOverview();
+  const [exporting, setExporting] = useState(false);
 
   const loading = statsLoading || dataLoading;
   const error = statsError || dataError;
@@ -65,6 +69,101 @@ const Overview = () => {
     return typeof n === "number" ? n.toLocaleString() : "0";
   };
 
+  const handleExport = () => {
+    if (loading) {
+      toast.error("Please wait for data to finish loading.");
+      return;
+    }
+    setExporting(true);
+    try {
+      const num = (k: string) => (typeof counts[k] === "number" ? counts[k] : 0);
+      const csv = buildSectionedCsv([
+        {
+          title: `Boss Management Report — ${todayStamp()}`,
+          headers: ["Metric", "Value"],
+          rows: [
+            { Metric: "Total Customers", Value: num("totalCustomers") },
+            { Metric: "New Applications", Value: num("newApps") },
+            { Metric: "Reactivations", Value: num("reactivations") },
+            { Metric: "Completed Cases", Value: num("completed") },
+            { Metric: "Pending Cases", Value: num("pending") },
+            { Metric: "To Contact", Value: num("toContact") },
+            { Metric: "Active Admins", Value: num("activeAdmins") },
+            { Metric: "Admins on Leave", Value: num("adminsOnLeave") },
+          ],
+        },
+        {
+          title: "Customers by Service",
+          headers: ["Service", "Count"],
+          rows: [
+            { Service: "GrabCar", Count: breakdown.grabCar },
+            { Service: "GrabFood", Count: breakdown.grabFood },
+          ],
+        },
+        {
+          title: "Customers by Location",
+          headers: ["Location", "Count"],
+          rows: [
+            { Location: "Klang Valley", Count: breakdown.klangValley },
+            { Location: "Outside Klang Valley", Count: breakdown.outsideKlangValley },
+            { Location: "Sabah & Sarawak", Count: breakdown.sabahSarawak },
+          ],
+        },
+        {
+          title: "High Priority / Urgent Cases",
+          headers: ["Applicant ID", "Name", "Phone", "Priority", "Status", "Next Follow-up"],
+          rows: urgent.map((c) => ({
+            "Applicant ID": c.applicant_id ?? "",
+            Name: c.full_name ?? "",
+            Phone: c.phone_number ?? "",
+            Priority: c.priority_status ?? "",
+            Status: c.customer_status ?? "",
+            "Next Follow-up": c.next_follow_up_date ?? "",
+          })),
+        },
+        {
+          title: "Admin Workload",
+          headers: ["Admin", "Email", "Status", "Availability", "Customers"],
+          rows: workload.map((a) => ({
+            Admin: a.full_name ?? "",
+            Email: a.email ?? "",
+            Status: a.status ?? "",
+            Availability: a.availability_status ?? "",
+            Customers: a.customer_count,
+          })),
+        },
+        {
+          title: "Recent Customer Activity",
+          headers: ["Applicant ID", "Name", "Service", "Status", "Updated"],
+          rows: recent.map((c) => ({
+            "Applicant ID": c.applicant_id ?? "",
+            Name: c.full_name ?? "",
+            Service: c.user_role ?? "",
+            Status: c.customer_status ?? "",
+            Updated: c.updated_at ?? "",
+          })),
+        },
+        {
+          title: "Pending Leave Requests",
+          headers: ["Staff", "Type", "Start", "End", "Reason"],
+          rows: pendingLeaves.map((l) => ({
+            Staff: l.staff_name ?? "",
+            Type: l.leave_type ?? "",
+            Start: l.start_date ?? "",
+            End: l.end_date ?? "",
+            Reason: l.reason ?? "",
+          })),
+        },
+      ]);
+      downloadCsv(`boss-management-report-${todayStamp()}.csv`, csv);
+      toast.success("Report exported.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Export failed.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -74,7 +173,10 @@ const Overview = () => {
         </div>
         <div className="flex items-center gap-3">
           {loading && <Loader2 className="w-4 h-4 animate-spin text-brand" />}
-          <Button className="gradient-brand">Export Report</Button>
+          <Button className="gradient-brand" onClick={handleExport} disabled={exporting || loading}>
+            {exporting ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1.5" />}
+            Export Report
+          </Button>
         </div>
       </div>
 

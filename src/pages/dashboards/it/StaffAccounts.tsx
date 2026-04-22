@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Lock, RefreshCw, Settings2, Pencil, Plus, ShieldAlert } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Loader2, Lock, RefreshCw, Settings2, Pencil, Plus, ShieldAlert, Search } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -51,6 +53,12 @@ const StaffAccounts = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [formInitial, setFormInitial] = useState<Partial<StaffFormValues> | null>(null);
+  const [q, setQ] = useState("");
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const urlQ = searchParams.get("q");
+    if (urlQ) setQ(urlQ);
+  }, [searchParams]);
   const { profile } = useAuth();
   const role = profile?.role;
   const canEditScope = role === "it_tech" || role === "boss" || role === "super_admin";
@@ -88,6 +96,15 @@ const StaffAccounts = () => {
   };
 
   useEffect(() => { load(); }, []);
+
+  const visibleRows = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    if (!term) return rows;
+    return rows.filter((s) =>
+      [s.full_name, s.username, s.email, s.phone_number, s.role, s.branch_hub]
+        .some((v) => (v ?? "").toLowerCase().includes(term)),
+    );
+  }, [rows, q]);
 
   const update = async (id: string, patch: Partial<Staff>) => {
     setBusyId(id);
@@ -137,6 +154,15 @@ const StaffAccounts = () => {
           <p className="text-sm text-muted-foreground">Manage status, availability and lock state for every staff account.</p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 px-3 h-9 rounded-md border border-border bg-background w-64">
+            <Search className="w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search name, email, role…"
+              className="border-0 focus-visible:ring-0 px-0 h-7 text-sm"
+            />
+          </div>
           <Button variant="outline" size="sm" onClick={load}><RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Refresh</Button>
           {canManageStaff && allowedRoles.length > 0 && (
             <Button size="sm" onClick={openCreate} className="gradient-brand">
@@ -151,7 +177,7 @@ const StaffAccounts = () => {
           <div className="p-8 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Loading staff…</div>
         ) : error ? (
           <div className="p-8 text-sm text-destructive">Failed to load: {error}</div>
-        ) : rows.length === 0 ? (
+        ) : visibleRows.length === 0 ? (
           <div className="p-8 text-sm text-muted-foreground text-center">No staff accounts.</div>
         ) : (
           <div className="overflow-x-auto">
@@ -172,7 +198,7 @@ const StaffAccounts = () => {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((s) => {
+                {visibleRows.map((s) => {
                   const manage = canManageRow(s);
                   const restricted = s.role === "super_admin" && !isSuperAdmin;
                   return (

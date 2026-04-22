@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Loader2, Search } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
@@ -25,6 +26,12 @@ const CustomersList = () => {
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "GrabCar" | "GrabFood">("all");
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const urlQ = searchParams.get("q");
+    if (urlQ) setQ(urlQ);
+  }, [searchParams]);
 
   useEffect(() => {
     (async () => {
