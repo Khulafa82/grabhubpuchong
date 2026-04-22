@@ -218,12 +218,16 @@ const RoundRobinControl = () => {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return rows.filter((r) => {
+    const filteredRows = rows.filter((r) => {
       if (q && !(r.full_name ?? "").toLowerCase().includes(q)) return false;
       if (filterEligibility !== "all" && (r.eligibility_status ?? "").toLowerCase() !== filterEligibility) return false;
       if (filterService !== "all" && (r.assigned_service_scope ?? "") !== filterService) return false;
       return true;
     });
+    const sorted = [...filteredRows].sort(
+      (a, b) => (a.display_order ?? 999999) - (b.display_order ?? 999999),
+    );
+    return sorted.map((r, index) => ({ ...r, ui_order: index + 1 }));
   }, [rows, search, filterEligibility, filterService]);
 
   const moveOrder = async (row: OverviewRow, direction: -1 | 1) => {
@@ -482,14 +486,14 @@ const RoundRobinControl = () => {
                     <tr key={r.id} className="border-b border-border/60 hover:bg-surface-muted/40">
                       <td className="py-2.5 px-4">
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveOrder(r, -1)} disabled={savingOrder === r.id || (r.display_order ?? 1) <= 1} aria-label="Move up">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveOrder(r, -1)} disabled={savingOrder === r.id || r.ui_order <= 1} aria-label="Move up">
                             <ArrowUp className="w-3.5 h-3.5" />
                           </Button>
                           <Input
                             type="number"
                             min={1}
-                            defaultValue={r.display_order ?? 1}
-                            key={`${r.id}-${r.display_order ?? 0}`}
+                            defaultValue={r.ui_order}
+                            key={`${r.id}-${r.ui_order}`}
                             className="h-7 w-14 text-center px-1"
                             onBlur={(e) => setOrderInline(r, Number(e.target.value))}
                             disabled={savingOrder === r.id}
