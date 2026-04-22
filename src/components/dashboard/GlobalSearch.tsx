@@ -91,32 +91,30 @@ export const GlobalSearch = ({ role }: Props) => {
       try {
         const escaped = term.replace(/[%,]/g, " ");
         const like = `%${escaped}%`;
-        const tasks: Promise<unknown>[] = [];
-        if (canSearchCustomers) {
-          tasks.push(
-            supabase
-              .from("customers")
-              .select("id, applicant_id, full_name, phone_number, ic_number, customer_status")
-              .or(
-                `full_name.ilike.${like},applicant_id.ilike.${like},phone_number.ilike.${like},ic_number.ilike.${like}`,
-              )
-              .limit(8),
-          );
-        } else {
-          tasks.push(Promise.resolve({ data: [], error: null }));
-        }
-        if (canSearchStaff) {
-          tasks.push(
-            supabase
-              .from("staff_profiles")
-              .select("id, full_name, username, email, role")
-              .or(`full_name.ilike.${like},username.ilike.${like},email.ilike.${like}`)
-              .limit(8),
-          );
-        } else {
-          tasks.push(Promise.resolve({ data: [], error: null }));
-        }
-        const [cRes, sRes] = (await Promise.all(tasks)) as Array<{ data: unknown; error: { message: string } | null }>;
+        const customerPromise = canSearchCustomers
+          ? Promise.resolve(
+              supabase
+                .from("customers")
+                .select("id, applicant_id, full_name, phone_number, ic_number, customer_status")
+                .or(
+                  `full_name.ilike.${like},applicant_id.ilike.${like},phone_number.ilike.${like},ic_number.ilike.${like}`,
+                )
+                .limit(8),
+            )
+          : Promise.resolve({ data: [], error: null } as { data: unknown; error: { message: string } | null });
+        const staffPromise = canSearchStaff
+          ? Promise.resolve(
+              supabase
+                .from("staff_profiles")
+                .select("id, full_name, username, email, role")
+                .or(`full_name.ilike.${like},username.ilike.${like},email.ilike.${like}`)
+                .limit(8),
+            )
+          : Promise.resolve({ data: [], error: null } as { data: unknown; error: { message: string } | null });
+        const [cRes, sRes] = (await Promise.all([customerPromise, staffPromise])) as Array<{
+          data: unknown;
+          error: { message: string } | null;
+        }>;
         if (ctrl.cancelled) return;
         if (cRes.error) throw cRes.error;
         if (sRes.error) throw sRes.error;
