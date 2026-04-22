@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -54,6 +54,9 @@ export const StaffFormDialog = ({
   open, onOpenChange, mode, initial, allowedRoles, onSaved,
 }: Props) => {
   const [saving, setSaving] = useState(false);
+  const [tempPassword, setTempPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [f, setF] = useState<StaffFormValues>({
     full_name: "", username: "", email: "", phone_number: "",
     role: allowedRoles[0]?.value ?? "admin",
@@ -65,6 +68,9 @@ export const StaffFormDialog = ({
 
   useEffect(() => {
     if (!open) return;
+    setTempPassword("");
+    setConfirmPassword("");
+    setShowPw(false);
     setF({
       id: initial?.id,
       full_name: initial?.full_name ?? "",
@@ -113,12 +119,32 @@ export const StaffFormDialog = ({
       assigned_channel_scope: f.assigned_channel_scope,
     };
 
+    if (mode === "create") {
+      if (!empty(f.email)) { toast.error("Email is required for login"); return; }
+      if (!tempPassword || tempPassword.length < 8) {
+        toast.error("Temporary password must be at least 8 characters"); return;
+      }
+      const strong = /[A-Z]/.test(tempPassword) && /[a-z]/.test(tempPassword) && /\d/.test(tempPassword);
+      if (!strong) {
+        toast.error("Password must include upper, lower case letters and a number"); return;
+      }
+      if (tempPassword !== confirmPassword) {
+        toast.error("Passwords do not match"); return;
+      }
+    }
+
     setSaving(true);
     try {
       if (mode === "create") {
-        const { error } = await supabase.from("staff_profiles").insert(payload);
-        if (error) throw error;
-        toast.success("Staff account created");
+        const { data, error } = await supabase.functions.invoke("create-staff-account", {
+          body: { ...payload, temporary_password: tempPassword },
+        });
+        const errMsg =
+          (data && typeof data === "object" && "error" in data && (data as { error?: string }).error) || null;
+        if (error || errMsg) throw new Error(errMsg || error?.message || "Failed to create account");
+        toast.success(
+          "Staff account created successfully. The user can log in using the temporary password and will be required to set a new password on first login.",
+        );
       } else {
         if (!f.id) throw new Error("Missing staff id");
         const { error } = await supabase.from("staff_profiles").update(payload).eq("id", f.id);
@@ -144,7 +170,7 @@ export const StaffFormDialog = ({
           <DialogTitle>{mode === "create" ? "Create Staff Account" : "Edit Staff Account"}</DialogTitle>
           <DialogDescription>
             {mode === "create"
-              ? "Add a new staff profile. A login account may need to be provisioned separately."
+              ? "Create a new staff account with login access and a temporary password. The user will be required to change it on first login."
               : "Update profile details and assignment scope."}
           </DialogDescription>
         </DialogHeader>
@@ -190,6 +216,47 @@ export const StaffFormDialog = ({
               <Input value={f.emergency_contact ?? ""} onChange={(e) => set("emergency_contact", e.target.value)} maxLength={160} />
             </Field>
           </section>
+
+          {mode === "create" && (
+            <section className="space-y-3 border-t border-border pt-4">
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal">Login Credentials</h4>
+                <p className="text-xs text-muted-foreground">
+                  The user will sign in with their email and this temporary password, then be forced to set a new one.
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Field label="Temporary password *">
+                  <div className="relative">
+                    <Input
+                      type={showPw ? "text" : "password"}
+                      value={tempPassword}
+                      onChange={(e) => setTempPassword(e.target.value)}
+                      placeholder="Min 8 chars, upper, lower & number"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPw((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      tabIndex={-1}
+                    >
+                      {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </Field>
+                <Field label="Confirm temporary password *">
+                  <Input
+                    type={showPw ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter password"
+                    autoComplete="new-password"
+                  />
+                </Field>
+              </div>
+            </section>
+          )}
 
           {showScope && (
             <section className="space-y-3 border-t border-border pt-4">
