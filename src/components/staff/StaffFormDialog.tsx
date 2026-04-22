@@ -170,7 +170,7 @@ export const StaffFormDialog = ({
           <DialogTitle>{mode === "create" ? "Create Staff Account" : "Edit Staff Account"}</DialogTitle>
           <DialogDescription>
             {mode === "create"
-              ? "Add a new staff profile. A login account may need to be provisioned separately."
+              ? "Create a new staff account with login access and a temporary password. The user will be required to change it on first login."
               : "Update profile details and assignment scope."}
           </DialogDescription>
         </DialogHeader>
@@ -216,6 +216,47 @@ export const StaffFormDialog = ({
               <Input value={f.emergency_contact ?? ""} onChange={(e) => set("emergency_contact", e.target.value)} maxLength={160} />
             </Field>
           </section>
+
+          {mode === "create" && (
+            <section className="space-y-3 border-t border-border pt-4">
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal">Login Credentials</h4>
+                <p className="text-xs text-muted-foreground">
+                  The user will sign in with their email and this temporary password, then be forced to set a new one.
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Field label="Temporary password *">
+                  <div className="relative">
+                    <Input
+                      type={showPw ? "text" : "password"}
+                      value={tempPassword}
+                      onChange={(e) => setTempPassword(e.target.value)}
+                      placeholder="Min 8 chars, upper, lower & number"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPw((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      tabIndex={-1}
+                    >
+                      {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </Field>
+                <Field label="Confirm temporary password *">
+                  <Input
+                    type={showPw ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter password"
+                    autoComplete="new-password"
+                  />
+                </Field>
+              </div>
+            </section>
+          )}
 
           {showScope && (
             <section className="space-y-3 border-t border-border pt-4">
