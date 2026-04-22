@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { Loader2, Lock, RefreshCw } from "lucide-react";
+import { Loader2, Lock, RefreshCw, Settings2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import { ManageScopeDialog } from "@/components/staff/ManageScopeDialog";
+import { scopeLabel, StaffScope } from "@/lib/scope";
 
 interface Staff {
   id: string;
@@ -17,6 +20,10 @@ interface Staff {
   availability_status: string | null;
   account_locked: boolean | null;
   created_at: string | null;
+  assigned_service_scope: string | null;
+  assigned_location_scope: string | null;
+  assigned_application_scope: string | null;
+  assigned_channel_scope: string | null;
 }
 
 const STATUS = ["active", "inactive", "suspended", "resigned"];
@@ -27,12 +34,18 @@ const StaffAccounts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [scopeTarget, setScopeTarget] = useState<Staff | null>(null);
+  const { profile } = useAuth();
+  const role = profile?.role;
+  const canEditScope = role === "it_tech" || role === "boss" || role === "super_admin";
 
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("staff_profiles")
-      .select("id, full_name, username, email, role, status, availability_status, account_locked, created_at")
+      .select(
+        "id, full_name, username, email, role, status, availability_status, account_locked, created_at, assigned_service_scope, assigned_location_scope, assigned_application_scope, assigned_channel_scope",
+      )
       .order("role", { ascending: true })
       .order("full_name", { ascending: true });
     if (error) setError(error.message);
@@ -81,8 +94,9 @@ const StaffAccounts = () => {
                   <th className="py-3 px-4 font-medium">Role</th>
                   <th className="py-3 px-4 font-medium">Status</th>
                   <th className="py-3 px-4 font-medium">Availability</th>
+                  <th className="py-3 px-4 font-medium">Assignment Scope</th>
                   <th className="py-3 px-4 font-medium">Created</th>
-                  <th className="py-3 px-4 font-medium text-right">Lock</th>
+                  <th className="py-3 px-4 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -104,11 +118,43 @@ const StaffAccounts = () => {
                         <SelectContent>{AVAIL.map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
                       </Select>
                     </td>
+                    <td className="py-2.5 px-4">
+                      {s.role === "admin" ? (
+                        <div className="flex flex-wrap gap-1 max-w-[260px]">
+                          <Badge variant="outline" className="bg-brand/5 text-charcoal border-border text-[10px]">
+                            {scopeLabel("service", s.assigned_service_scope)}
+                          </Badge>
+                          <Badge variant="outline" className="bg-brand/5 text-charcoal border-border text-[10px]">
+                            {scopeLabel("location", s.assigned_location_scope)}
+                          </Badge>
+                          <Badge variant="outline" className="bg-brand/5 text-charcoal border-border text-[10px]">
+                            {scopeLabel("account", s.assigned_application_scope)}
+                          </Badge>
+                          <Badge variant="outline" className="bg-brand/5 text-charcoal border-border text-[10px]">
+                            {scopeLabel("channel", s.assigned_channel_scope)}
+                          </Badge>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
                     <td className="py-2.5 px-4 text-muted-foreground text-xs">{s.created_at ? new Date(s.created_at).toLocaleDateString() : "—"}</td>
                     <td className="py-2.5 px-4 text-right">
-                      <Button size="sm" variant={s.account_locked ? "default" : "outline"} disabled={busyId === s.id} onClick={() => update(s.id, { account_locked: !s.account_locked })}>
-                        <Lock className="w-3 h-3 mr-1" />{s.account_locked ? "Unlock" : "Lock"}
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        {s.role === "admin" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setScopeTarget(s)}
+                          >
+                            <Settings2 className="w-3 h-3 mr-1" />
+                            {canEditScope ? "Manage Scope" : "View Scope"}
+                          </Button>
+                        )}
+                        <Button size="sm" variant={s.account_locked ? "default" : "outline"} disabled={busyId === s.id} onClick={() => update(s.id, { account_locked: !s.account_locked })}>
+                          <Lock className="w-3 h-3 mr-1" />{s.account_locked ? "Unlock" : "Lock"}
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -117,6 +163,16 @@ const StaffAccounts = () => {
           </div>
         )}
       </Card>
+
+      <ManageScopeDialog
+        open={!!scopeTarget}
+        onOpenChange={(v) => !v && setScopeTarget(null)}
+        staffId={scopeTarget?.id ?? null}
+        staffName={scopeTarget?.full_name ?? null}
+        initial={scopeTarget as Partial<StaffScope> | null}
+        readOnly={!canEditScope}
+        onSaved={load}
+      />
     </div>
   );
 };
