@@ -119,12 +119,32 @@ export const StaffFormDialog = ({
       assigned_channel_scope: f.assigned_channel_scope,
     };
 
+    if (mode === "create") {
+      if (!empty(f.email)) { toast.error("Email is required for login"); return; }
+      if (!tempPassword || tempPassword.length < 8) {
+        toast.error("Temporary password must be at least 8 characters"); return;
+      }
+      const strong = /[A-Z]/.test(tempPassword) && /[a-z]/.test(tempPassword) && /\d/.test(tempPassword);
+      if (!strong) {
+        toast.error("Password must include upper, lower case letters and a number"); return;
+      }
+      if (tempPassword !== confirmPassword) {
+        toast.error("Passwords do not match"); return;
+      }
+    }
+
     setSaving(true);
     try {
       if (mode === "create") {
-        const { error } = await supabase.from("staff_profiles").insert(payload);
-        if (error) throw error;
-        toast.success("Staff account created");
+        const { data, error } = await supabase.functions.invoke("create-staff-account", {
+          body: { ...payload, temporary_password: tempPassword },
+        });
+        const errMsg =
+          (data && typeof data === "object" && "error" in data && (data as { error?: string }).error) || null;
+        if (error || errMsg) throw new Error(errMsg || error?.message || "Failed to create account");
+        toast.success(
+          "Staff account created successfully. The user can log in using the temporary password and will be required to set a new password on first login.",
+        );
       } else {
         if (!f.id) throw new Error("Missing staff id");
         const { error } = await supabase.from("staff_profiles").update(payload).eq("id", f.id);
