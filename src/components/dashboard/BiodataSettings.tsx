@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Save, Upload, ShieldCheck, User as UserIcon, Settings as SettingsIcon, KeyRound, Mail, Phone, Calendar as CalIcon, MapPin, BadgeCheck, AlertCircle } from "lucide-react";
+import { Loader2, Save, Upload, ShieldCheck, User as UserIcon, KeyRound, Calendar as CalIcon, MapPin, BadgeCheck, AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
@@ -70,11 +68,6 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
   const [phone, setPhone] = useState("");
   const [emergency, setEmergency] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
-  const [theme, setTheme] = useState<string>("system");
-  const [language, setLanguage] = useState<string>("en");
-  const [notifEmail, setNotifEmail] = useState(true);
-  const [notifInApp, setNotifInApp] = useState(true);
-  const [notifSms, setNotifSms] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // password
