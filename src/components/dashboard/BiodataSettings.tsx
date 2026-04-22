@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Save, Upload, ShieldCheck, User as UserIcon, Settings as SettingsIcon, KeyRound, Mail, Phone, Calendar as CalIcon, MapPin, BadgeCheck, AlertCircle } from "lucide-react";
+import { Loader2, Save, Upload, ShieldCheck, User as UserIcon, KeyRound, Calendar as CalIcon, MapPin, BadgeCheck, AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
@@ -70,11 +68,6 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
   const [phone, setPhone] = useState("");
   const [emergency, setEmergency] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
-  const [theme, setTheme] = useState<string>("system");
-  const [language, setLanguage] = useState<string>("en");
-  const [notifEmail, setNotifEmail] = useState(true);
-  const [notifInApp, setNotifInApp] = useState(true);
-  const [notifSms, setNotifSms] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // password
@@ -108,12 +101,6 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
         setPhone(p.phone_number ?? "");
         setEmergency(p.emergency_contact ?? "");
         setPhotoUrl(p.profile_photo_url ?? "");
-        setTheme(p.theme_preference ?? "system");
-        setLanguage(p.language_preference ?? "en");
-        const np = (p.notification_preferences ?? {}) as Record<string, unknown>;
-        setNotifEmail(np.email !== false);
-        setNotifInApp(np.in_app !== false);
-        setNotifSms(np.sms === true);
       }
       setLoading(false);
     })();
@@ -129,17 +116,6 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
       phone !== (data.phone_number ?? "") ||
       emergency !== (data.emergency_contact ?? "") ||
       photoUrl !== (data.profile_photo_url ?? ""));
-
-  const prefsDirty =
-    !!data &&
-    (theme !== (data.theme_preference ?? "system") ||
-      language !== (data.language_preference ?? "en") ||
-      JSON.stringify({ email: notifEmail, in_app: notifInApp, sms: notifSms }) !==
-        JSON.stringify({
-          email: (data.notification_preferences as any)?.email !== false,
-          in_app: (data.notification_preferences as any)?.in_app !== false,
-          sms: (data.notification_preferences as any)?.sms === true,
-        }));
 
   const saveProfile = async () => {
     if (!data) return;
@@ -168,34 +144,6 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
     }
     setData(updated as unknown as FullProfile);
     toast.success("Profile updated");
-    await refreshProfile();
-  };
-
-  const savePrefs = async () => {
-    if (!data) return;
-    setSaving(true);
-    const notification_preferences = { email: notifEmail, in_app: notifInApp, sms: notifSms };
-    const { data: updated, error } = await supabase
-      .from("staff_profiles")
-      .update({
-        theme_preference: theme,
-        language_preference: language,
-        notification_preferences,
-      })
-      .eq("id", data.id)
-      .select(SELECT_COLS)
-      .maybeSingle();
-    setSaving(false);
-    if (error) {
-      toast.error(`Save failed: ${error.message}`);
-      return;
-    }
-    if (!updated) {
-      toast.error("Save blocked.");
-      return;
-    }
-    setData(updated as unknown as FullProfile);
-    toast.success("Preferences saved");
     await refreshProfile();
   };
 
@@ -384,7 +332,6 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList>
           <TabsTrigger value="profile" className="gap-2"><UserIcon className="w-4 h-4" /> Profile</TabsTrigger>
-          <TabsTrigger value="prefs" className="gap-2"><SettingsIcon className="w-4 h-4" /> Preferences</TabsTrigger>
           <TabsTrigger value="security" className="gap-2"><ShieldCheck className="w-4 h-4" /> Security</TabsTrigger>
         </TabsList>
 
@@ -444,70 +391,6 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
               <Button onClick={saveProfile} disabled={!profileDirty || saving} className="gradient-brand">
                 {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                 Save changes
-              </Button>
-            </div>
-          </Card>
-        </TabsContent>
-
-        {/* PREFERENCES TAB */}
-        <TabsContent value="prefs" className="space-y-6 m-0">
-          <Card className="p-6 space-y-5">
-            <h3 className="font-semibold text-charcoal">Appearance & language</h3>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Theme</Label>
-                <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="system">System</SelectItem>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Language</Label>
-                <Select value={language} onValueChange={setLanguage}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="ms">Bahasa Malaysia</SelectItem>
-                    <SelectItem value="zh">中文</SelectItem>
-                    <SelectItem value="ta">தமிழ்</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 space-y-4">
-            <h3 className="font-semibold text-charcoal">Notification preferences</h3>
-            <ToggleRow
-              icon={Mail}
-              label="Email notifications"
-              desc="Important updates and digests via email."
-              checked={notifEmail}
-              onChange={setNotifEmail}
-            />
-            <ToggleRow
-              icon={SettingsIcon}
-              label="In-app notifications"
-              desc="Show notifications inside the dashboard."
-              checked={notifInApp}
-              onChange={setNotifInApp}
-            />
-            <ToggleRow
-              icon={Phone}
-              label="SMS notifications"
-              desc="Critical alerts only, sent to your phone."
-              checked={notifSms}
-              onChange={setNotifSms}
-            />
-
-            <div className="flex justify-end pt-2">
-              <Button onClick={savePrefs} disabled={!prefsDirty || saving} className="gradient-brand">
-                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                Save preferences
               </Button>
             </div>
           </Card>
@@ -593,33 +476,6 @@ const Field = ({
       {label}
     </div>
     <div className="text-sm text-charcoal break-words">{children}</div>
-  </div>
-);
-
-const ToggleRow = ({
-  icon: Icon,
-  label,
-  desc,
-  checked,
-  onChange,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  desc: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) => (
-  <div className="flex items-start justify-between gap-4 py-2 border-b border-border last:border-0">
-    <div className="flex items-start gap-3">
-      <div className="w-8 h-8 rounded-md bg-brand/10 text-brand flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4" />
-      </div>
-      <div>
-        <div className="text-sm font-medium text-charcoal">{label}</div>
-        <div className="text-xs text-muted-foreground">{desc}</div>
-      </div>
-    </div>
-    <Switch checked={checked} onCheckedChange={onChange} />
   </div>
 );
 
