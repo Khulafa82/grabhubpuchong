@@ -22,6 +22,10 @@ const StaffLogin = () => {
   // Auto-redirect if already signed in with valid profile
   useEffect(() => {
     if (!authLoading && user && profile && profile.status === "active") {
+      if (profile.first_login_completed === false) {
+        navigate("/first-time-password-change", { replace: true });
+        return;
+      }
       const path = ROLE_TO_PATH[profile.role as StaffRole];
       if (path) navigate(path, { replace: true });
     }
@@ -69,6 +73,11 @@ const StaffLogin = () => {
       await supabase.auth.signOut();
       setError("Your account role is not recognized.");
       setLoading(false);
+      return;
+    }
+
+    if (prof.first_login_completed === false) {
+      navigate("/first-time-password-change", { replace: true });
       return;
     }
 
