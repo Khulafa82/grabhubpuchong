@@ -230,6 +230,14 @@ const RoundRobinControl = () => {
     return sorted.map((r, index) => ({ ...r, ui_order: index + 1 }));
   }, [rows, search, filterEligibility, filterService]);
 
+  const sortedEligible = useMemo(
+    () =>
+      [...((matching ?? []).filter((m) => m.is_eligible))].sort(
+        (a, b) => (a.display_order ?? 999999) - (b.display_order ?? 999999),
+      ),
+    [matching],
+  );
+
   const moveOrder = async (row: OverviewRow, direction: -1 | 1) => {
     const current = row.display_order ?? 0;
     const target = current + direction;
