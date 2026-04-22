@@ -54,6 +54,9 @@ export const StaffFormDialog = ({
   open, onOpenChange, mode, initial, allowedRoles, onSaved,
 }: Props) => {
   const [saving, setSaving] = useState(false);
+  const [tempPassword, setTempPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [f, setF] = useState<StaffFormValues>({
     full_name: "", username: "", email: "", phone_number: "",
     role: allowedRoles[0]?.value ?? "admin",
@@ -65,6 +68,9 @@ export const StaffFormDialog = ({
 
   useEffect(() => {
     if (!open) return;
+    setTempPassword("");
+    setConfirmPassword("");
+    setShowPw(false);
     setF({
       id: initial?.id,
       full_name: initial?.full_name ?? "",
