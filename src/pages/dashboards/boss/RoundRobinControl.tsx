@@ -218,13 +218,25 @@ const RoundRobinControl = () => {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return rows.filter((r) => {
+    const filteredRows = rows.filter((r) => {
       if (q && !(r.full_name ?? "").toLowerCase().includes(q)) return false;
       if (filterEligibility !== "all" && (r.eligibility_status ?? "").toLowerCase() !== filterEligibility) return false;
       if (filterService !== "all" && (r.assigned_service_scope ?? "") !== filterService) return false;
       return true;
     });
+    const sorted = [...filteredRows].sort(
+      (a, b) => (a.display_order ?? 999999) - (b.display_order ?? 999999),
+    );
+    return sorted.map((r, index) => ({ ...r, ui_order: index + 1 }));
   }, [rows, search, filterEligibility, filterService]);
+
+  const sortedEligible = useMemo(
+    () =>
+      [...((matching ?? []).filter((m) => m.is_eligible))].sort(
+        (a, b) => (a.display_order ?? 999999) - (b.display_order ?? 999999),
+      ),
+    [matching],
+  );
 
   const moveOrder = async (row: OverviewRow, direction: -1 | 1) => {
     const current = row.display_order ?? 0;
@@ -366,7 +378,14 @@ const RoundRobinControl = () => {
             ) : nextAdmin?.admin_id ? (
               <>
                 <div className="text-lg font-semibold text-charcoal">{nextAdmin.admin_name ?? "—"}</div>
-                <div className="text-xs text-muted-foreground">Display order #{nextAdmin.display_order ?? "—"}</div>
+                <div className="text-xs text-muted-foreground">
+                  Display order #{
+                    (() => {
+                      const idx = sortedEligible.findIndex((m) => m.admin_id === nextAdmin.admin_id);
+                      return idx >= 0 ? idx + 1 : "—";
+                    })()
+                  }
+                </div>
               </>
             ) : (
               <div className="text-sm text-muted-foreground">No eligible admin for this profile.</div>
@@ -377,14 +396,14 @@ const RoundRobinControl = () => {
             <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-brand" /> Eligible admins</div>
             {previewLoading ? (
               <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading…</div>
-            ) : (matching ?? []).filter((m) => m.is_eligible).length === 0 ? (
+            ) : sortedEligible.length === 0 ? (
               <div className="text-sm text-muted-foreground">No eligible admins.</div>
             ) : (
               <ul className="space-y-1.5 text-sm">
-                {(matching ?? []).filter((m) => m.is_eligible).map((m) => (
+                {sortedEligible.map((m, idx) => (
                   <li key={m.admin_id} className="flex items-center justify-between">
                     <span className="text-charcoal">{m.admin_name ?? "—"}</span>
-                    <span className="text-xs text-muted-foreground">#{m.display_order ?? "—"}</span>
+                    <span className="text-xs text-muted-foreground">#{idx + 1}</span>
                   </li>
                 ))}
               </ul>
@@ -482,14 +501,14 @@ const RoundRobinControl = () => {
                     <tr key={r.id} className="border-b border-border/60 hover:bg-surface-muted/40">
                       <td className="py-2.5 px-4">
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveOrder(r, -1)} disabled={savingOrder === r.id || (r.display_order ?? 1) <= 1} aria-label="Move up">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveOrder(r, -1)} disabled={savingOrder === r.id || r.ui_order <= 1} aria-label="Move up">
                             <ArrowUp className="w-3.5 h-3.5" />
                           </Button>
                           <Input
                             type="number"
                             min={1}
-                            defaultValue={r.display_order ?? 1}
-                            key={`${r.id}-${r.display_order ?? 0}`}
+                            defaultValue={r.ui_order}
+                            key={`${r.id}-${r.ui_order}`}
                             className="h-7 w-14 text-center px-1"
                             onBlur={(e) => setOrderInline(r, Number(e.target.value))}
                             disabled={savingOrder === r.id}
