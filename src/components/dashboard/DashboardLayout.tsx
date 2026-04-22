@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LogOut, Bell, Menu, Loader2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { LogOut, Menu, Loader2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useState, type ComponentType } from "react";
 import { Logo } from "@/components/site/Logo";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { GlobalSearch } from "@/components/dashboard/GlobalSearch";
+import { NotificationBell } from "@/components/dashboard/NotificationBell";
 
 const initialsOf = (name?: string | null) =>
   (name ?? "")
@@ -138,7 +139,7 @@ export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
           <button onClick={() => setOpen(true)} className="lg:hidden"><Menu /></button>
           <GlobalSearch role={role} />
           <div className="flex-1 md:hidden" />
-          <Button variant="ghost" size="icon"><Bell className="w-4 h-4" /></Button>
+          <NotificationBell />
           <div className="flex items-center gap-2 pl-3 border-l border-border">
             <Avatar className="w-8 h-8">
               {photo ? <AvatarImage src={photo} alt={displayName} /> : null}
