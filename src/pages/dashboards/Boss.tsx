@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import {
-  LayoutDashboard, Users, BarChart3, CalendarCheck, UsersRound, FileBarChart, Settings,
+  LayoutDashboard, Users, BarChart3, CalendarCheck, UsersRound, FileBarChart, Settings, UserCog,
   TrendingUp, Clock, AlertTriangle, Loader2, Car, Utensils, MapPin,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -18,6 +18,7 @@ import BossLeave from "./boss/LeaveApproval";
 import BossPerformance from "./boss/Performance";
 import BossSettings from "./boss/Settings";
 import { PsvCalendarPage } from "@/components/psv/PsvCalendarPage";
+import StaffAccounts from "./it/StaffAccounts";
 
 const items = [
   { label: "Dashboard Overview", to: "/boss", icon: LayoutDashboard },
@@ -25,6 +26,7 @@ const items = [
   { label: "Admin Performance", to: "/boss/performance", icon: BarChart3 },
   { label: "Leave Approval", to: "/boss/leave", icon: CalendarCheck },
   { label: "Customer Assignment", to: "/boss/assignments", icon: UsersRound },
+  { label: "Staff Account Mgmt", to: "/boss/accounts", icon: UserCog },
   { label: "PSV Calendar", to: "/boss/psv-calendar", icon: CalendarCheck },
   { label: "Reports & Analytics", to: "/boss/reports", icon: FileBarChart },
   { label: "Biodata & Settings", to: "/boss/settings", icon: Settings },
@@ -255,6 +257,7 @@ const Boss = () => (
       <Route path="performance" element={<BossPerformance />} />
       <Route path="leave" element={<BossLeave />} />
       <Route path="assignments" element={<BossAssignments />} />
+      <Route path="accounts" element={<StaffAccounts />} />
       <Route path="psv-calendar" element={<PsvCalendarPage role="boss" />} />
       <Route path="reports" element={<BossReports />} />
       <Route path="settings" element={<BossSettings />} />
