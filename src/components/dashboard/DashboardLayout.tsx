@@ -1,13 +1,13 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LogOut, Bell, Search, Menu, Loader2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { LogOut, Bell, Menu, Loader2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useState, type ComponentType } from "react";
 import { Logo } from "@/components/site/Logo";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { GlobalSearch } from "@/components/dashboard/GlobalSearch";
 
 const initialsOf = (name?: string | null) =>
   (name ?? "")
@@ -136,10 +136,7 @@ export const DashboardLayout = ({ role, roleLabel, items }: Props) => {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-20 h-16 bg-background border-b border-border flex items-center px-4 lg:px-6 gap-4">
           <button onClick={() => setOpen(true)} className="lg:hidden"><Menu /></button>
-          <div className="hidden md:flex items-center gap-2 flex-1 max-w-md">
-            <Search className="w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search..." className="border-0 focus-visible:ring-0 px-0" />
-          </div>
+          <GlobalSearch role={role} />
           <div className="flex-1 md:hidden" />
           <Button variant="ghost" size="icon"><Bell className="w-4 h-4" /></Button>
           <div className="flex items-center gap-2 pl-3 border-l border-border">
