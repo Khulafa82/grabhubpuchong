@@ -7,11 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  Phone, MessageCircle, Copy, Lock, Loader2, Save, AlertTriangle, Pencil,
+  MessageCircle, Copy, Lock, Loader2, Save, AlertTriangle, Pencil, ExternalLink,
 } from "lucide-react";
 import {
   Customer, CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
-  statusBadgeClass, priorityBadgeClass, telLink, waLink,
+  statusBadgeClass, priorityBadgeClass, waLink,
   BOLT_STATUS_OPTIONS, BOLT_STATUS_LABEL, boltStatusBadgeClass,
 } from "@/lib/customers";
 import { supabase } from "@/lib/supabase";
@@ -300,11 +300,19 @@ export const CustomerDetailDrawer = ({
 
             {/* Quick actions (always shown) */}
             <div className="flex flex-wrap gap-2 pt-2">
-              <Button asChild size="sm" variant="outline">
-                <a href={telLink(customer.phone_number)}>
-                  <Phone className="w-3.5 h-3.5 mr-1" /> Call
-                </a>
-              </Button>
+              {customer.bolt_url && customer.bolt_url.trim() !== "" && (
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  title="Open Bolt application link"
+                  className="cursor-pointer"
+                >
+                  <a href={customer.bolt_url} target="_blank" rel="noreferrer">
+                    <ExternalLink className="w-3.5 h-3.5 mr-1" /> BOLT LINK
+                  </a>
+                </Button>
+              )}
               <Button asChild size="sm" variant="outline">
                 <a href={waLink(customer.phone_number)} target="_blank" rel="noreferrer">
                   <MessageCircle className="w-3.5 h-3.5 mr-1" /> WhatsApp
