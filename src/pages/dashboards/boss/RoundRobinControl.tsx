@@ -143,28 +143,61 @@ const RoundRobinControl = () => {
   const runPreview = useCallback(async () => {
     setPreviewLoading(true);
     try {
+      const params = {
+        p_service: previewService,
+        p_location: previewLocation,
+        p_application: previewApp,
+        p_channel: previewChannel,
+      };
+      // eslint-disable-next-line no-console
+      console.log("[RoundRobin] preview params", params);
       const [m, n] = await Promise.all([
-        supabase.rpc("preview_matching_admins", {
-          p_service: previewService,
-          p_location: previewLocation,
-          p_application: previewApp,
-          p_channel: previewChannel,
-        }),
-        supabase.rpc("preview_next_admin", {
-          p_service: previewService,
-          p_location: previewLocation,
-          p_application: previewApp,
-          p_channel: previewChannel,
-        }),
+        supabase.rpc("preview_matching_admins", params),
+        supabase.rpc("preview_next_admin", params),
       ]);
       if (m.error) throw m.error;
       if (n.error) throw n.error;
-      setMatching((m.data ?? []) as MatchingAdmin[]);
+      // eslint-disable-next-line no-console
+      console.log("[RoundRobin] preview_matching_admins ->", m.data);
+      // eslint-disable-next-line no-console
+      console.log("[RoundRobin] preview_next_admin ->", n.data);
+
+      const rawMatching = Array.isArray(m.data) ? m.data : m.data ? [m.data] : [];
+      const normalizedMatching: MatchingAdmin[] = rawMatching.map((r: Record<string, unknown>) => {
+        const eligibleRaw =
+          r.is_eligible ?? r.isEligible ?? r.eligible ?? r.is_match ?? null;
+        const isEligible =
+          typeof eligibleRaw === "boolean"
+            ? eligibleRaw
+            : typeof eligibleRaw === "string"
+            ? eligibleRaw.toLowerCase() === "true" || eligibleRaw.toLowerCase() === "eligible"
+            : false;
+        return {
+          admin_id: String(r.admin_id ?? r.id ?? r.adminId ?? ""),
+          admin_name: (r.admin_name ?? r.full_name ?? r.name ?? r.adminName ?? null) as string | null,
+          display_order: (r.display_order ?? r.displayOrder ?? null) as number | null,
+          is_eligible: isEligible,
+          exclusion_reason: (r.exclusion_reason ?? r.reason ?? r.exclusionReason ?? null) as string | null,
+        };
+      });
+      setMatching(normalizedMatching);
+
       const nd = n.data;
-      const nextRow: NextAdmin | null = Array.isArray(nd) ? (nd[0] ?? null) : (nd ?? null);
+      const rawNext = Array.isArray(nd) ? nd[0] : nd;
+      const nextRow: NextAdmin | null = rawNext
+        ? {
+            admin_id: (rawNext.admin_id ?? rawNext.id ?? rawNext.adminId ?? null) as string | null,
+            admin_name: (rawNext.admin_name ?? rawNext.full_name ?? rawNext.name ?? rawNext.adminName ?? null) as
+              | string
+              | null,
+            display_order: (rawNext.display_order ?? rawNext.displayOrder ?? null) as number | null,
+          }
+        : null;
       setNextAdmin(nextRow);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      // eslint-disable-next-line no-console
+      console.error("[RoundRobin] preview failed", e);
       toast.error(`Preview failed: ${msg}`);
     } finally {
       setPreviewLoading(false);
