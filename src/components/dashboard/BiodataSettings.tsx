@@ -147,34 +147,6 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
     await refreshProfile();
   };
 
-  const savePrefs = async () => {
-    if (!data) return;
-    setSaving(true);
-    const notification_preferences = { email: notifEmail, in_app: notifInApp, sms: notifSms };
-    const { data: updated, error } = await supabase
-      .from("staff_profiles")
-      .update({
-        theme_preference: theme,
-        language_preference: language,
-        notification_preferences,
-      })
-      .eq("id", data.id)
-      .select(SELECT_COLS)
-      .maybeSingle();
-    setSaving(false);
-    if (error) {
-      toast.error(`Save failed: ${error.message}`);
-      return;
-    }
-    if (!updated) {
-      toast.error("Save blocked.");
-      return;
-    }
-    setData(updated as unknown as FullProfile);
-    toast.success("Preferences saved");
-    await refreshProfile();
-  };
-
   const handleUpload = async (file: File) => {
     if (!user) return;
     if (file.size > 5 * 1024 * 1024) {
