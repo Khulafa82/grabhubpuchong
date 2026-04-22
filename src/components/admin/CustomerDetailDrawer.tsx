@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  Phone, MessageCircle, Copy, Lock, Loader2, Save, AlertTriangle, Pencil, ExternalLink,
+  MessageCircle, Copy, Lock, Loader2, Save, AlertTriangle, Pencil, ExternalLink,
 } from "lucide-react";
 import {
   Customer, CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
