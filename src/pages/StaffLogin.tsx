@@ -130,7 +130,13 @@ const StaffLogin = () => {
             </div>
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center gap-2 cursor-pointer"><Checkbox /> <span>Remember me</span></label>
-              <button type="button" className="text-brand hover:underline">Forgot password?</button>
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password-request")}
+                className="text-brand hover:underline"
+              >
+                Forgot password?
+              </button>
             </div>
             <Button type="submit" disabled={loading} className="gradient-brand w-full">
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Signing in…</> : "Sign in"}

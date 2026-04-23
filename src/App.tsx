@@ -14,6 +14,7 @@ import Articles from "./pages/Articles";
 import Contact from "./pages/Contact";
 import StaffLogin from "./pages/StaffLogin";
 import FirstTimePasswordChange from "./pages/FirstTimePasswordChange";
+import ForgotPasswordRequest from "./pages/ForgotPasswordRequest";
 import Register from "./pages/Register";
 import RegistrationSuccess from "./pages/RegistrationSuccess";
 import Admin from "./pages/dashboards/Admin";
@@ -42,6 +43,7 @@ const App = () => (
             </Route>
             <Route path="/staff-login" element={<StaffLogin />} />
             <Route path="/first-time-password-change" element={<FirstTimePasswordChange />} />
+            <Route path="/forgot-password-request" element={<ForgotPasswordRequest />} />
             <Route path="/register" element={<Register />} />
             <Route path="/registration-success" element={<RegistrationSuccess />} />
             <Route path="/admin/*" element={<ProtectedRoute role="admin"><Admin /></ProtectedRoute>} />
