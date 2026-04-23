@@ -28,72 +28,44 @@ const ForgotPasswordRequest = () => {
 
     setLoading(true);
     try {
-      // STEP 1: Find staff by email (case-insensitive)
-      const { data: profile, error: profErr } = await supabase
-        .from("staff_profiles")
-        .select("id, email, status")
-        .ilike("email", trimmed)
-        .maybeSingle();
+      const { data, error: fnErr } = await supabase.functions.invoke(
+        "request-password-reset",
+        { body: { email: trimmed } },
+      );
 
-      console.log("[ForgotPassword] staff lookup result:", { profile, profErr });
+      console.log("[ForgotPassword] edge function response:", { data, fnErr });
 
-      if (profErr) {
-        setError(`Error looking up staff account: ${profErr.message}`);
+      if (fnErr) {
+        setError(`Could not submit your request: ${fnErr.message}`);
         setLoading(false);
         return;
       }
 
-      if (!profile) {
+      if (data?.error === "NOT_FOUND") {
         setError("No staff account found with this email.");
         setLoading(false);
         return;
       }
 
-      // STEP 2: Check for existing pending request
-      const { data: existing, error: dupErr } = await supabase
-        .from("staff_password_reset_requests")
-        .select("id, request_status")
-        .eq("email", trimmed)
-        .eq("request_status", "pending")
-        .limit(1);
-
-      console.log("[ForgotPassword] duplicate check result:", { existing, dupErr });
-
-      if (dupErr) {
-        setError(`Error checking existing requests: ${dupErr.message}`);
-        setLoading(false);
-        return;
-      }
-
-      if (existing && existing.length > 0) {
+      if (data?.error === "ALREADY_PENDING") {
         setError("A password reset request is already pending.");
         setLoading(false);
         return;
       }
 
-      // STEP 3: Insert real request
-      const { data: inserted, error: insertErr } = await supabase
-        .from("staff_password_reset_requests")
-        .insert({
-          staff_id: profile.id,
-          email: trimmed,
-          request_status: "pending",
-          requested_by_staff: true,
-        })
-        .select()
-        .maybeSingle();
-
-      console.log("[ForgotPassword] insert response:", { inserted, insertErr });
-
-      if (insertErr) {
-        setError(`Could not submit your request: ${insertErr.message}`);
+      if (data?.error) {
+        setError(data.message || "Could not submit your request.");
         setLoading(false);
         return;
       }
 
-      setSuccess(
-        "Your reset request has been submitted. Please wait for management to issue a temporary password.",
-      );
+      if (data?.success === true) {
+        setSuccess(
+          "Your reset request has been submitted. Please wait for management to issue a temporary password.",
+        );
+      } else {
+        setError("Unexpected response from server.");
+      }
     } catch (err) {
       console.error("[ForgotPassword] unexpected error:", err);
       setError("Something went wrong. Please try again.");
