@@ -8,9 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/site/Logo";
 import { supabase } from "@/lib/supabase";
 
-const SAFE_SUCCESS =
-  "If this email is registered, your reset request has been submitted. Please wait for management to issue a temporary password.";
-
 const ForgotPasswordRequest = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -31,51 +28,65 @@ const ForgotPasswordRequest = () => {
 
     setLoading(true);
     try {
-      // Look up staff profile by email
+      // STEP 1: Find staff by email (case-insensitive)
       const { data: profile, error: profErr } = await supabase
         .from("staff_profiles")
         .select("id, email, status")
-        .eq("email", trimmed)
+        .ilike("email", trimmed)
         .maybeSingle();
 
+      console.log("[ForgotPassword] staff lookup result:", { profile, profErr });
+
       if (profErr) {
-        // Don't expose details — show safe message
-        setSuccess(SAFE_SUCCESS);
+        setError(`Error looking up staff account: ${profErr.message}`);
         setLoading(false);
         return;
       }
 
       if (!profile) {
-        setSuccess(SAFE_SUCCESS);
+        setError("No staff account found with this email.");
         setLoading(false);
         return;
       }
 
-      // Check for existing pending request
-      const { data: existing } = await supabase
+      // STEP 2: Check for existing pending request
+      const { data: existing, error: dupErr } = await supabase
         .from("staff_password_reset_requests")
         .select("id, request_status")
-        .eq("staff_id", profile.id)
+        .eq("email", trimmed)
         .eq("request_status", "pending")
-        .maybeSingle();
+        .limit(1);
 
-      if (existing) {
-        setError("A reset request is already pending. Please wait for management to process it.");
+      console.log("[ForgotPassword] duplicate check result:", { existing, dupErr });
+
+      if (dupErr) {
+        setError(`Error checking existing requests: ${dupErr.message}`);
         setLoading(false);
         return;
       }
 
-      const { error: insertErr } = await supabase
+      if (existing && existing.length > 0) {
+        setError("A password reset request is already pending.");
+        setLoading(false);
+        return;
+      }
+
+      // STEP 3: Insert real request
+      const { data: inserted, error: insertErr } = await supabase
         .from("staff_password_reset_requests")
         .insert({
           staff_id: profile.id,
           email: trimmed,
           request_status: "pending",
           requested_by_staff: true,
-        });
+        })
+        .select()
+        .maybeSingle();
+
+      console.log("[ForgotPassword] insert response:", { inserted, insertErr });
 
       if (insertErr) {
-        setError("Could not submit your request. Please try again later.");
+        setError(`Could not submit your request: ${insertErr.message}`);
         setLoading(false);
         return;
       }
@@ -83,7 +94,8 @@ const ForgotPasswordRequest = () => {
       setSuccess(
         "Your reset request has been submitted. Please wait for management to issue a temporary password.",
       );
-    } catch {
+    } catch (err) {
+      console.error("[ForgotPassword] unexpected error:", err);
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
