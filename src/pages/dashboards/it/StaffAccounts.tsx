@@ -293,6 +293,12 @@ const StaffAccounts = () => {
           </div>
         )}
       </Card>
+        </TabsContent>
+
+        <TabsContent value="reset-requests" className="mt-0">
+          <PasswordResetRequests canReset={canResetPasswords} />
+        </TabsContent>
+      </Tabs>
 
       <ManageScopeDialog
         open={!!scopeTarget}
