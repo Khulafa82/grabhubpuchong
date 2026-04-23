@@ -12,6 +12,8 @@ import { useAuth } from "@/context/AuthContext";
 import { ManageScopeDialog } from "@/components/staff/ManageScopeDialog";
 import { scopeLabel, StaffScope } from "@/lib/scope";
 import { StaffFormDialog, StaffFormValues } from "@/components/staff/StaffFormDialog";
+import { PasswordResetRequests } from "@/components/staff/PasswordResetRequests";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface Staff {
   id: string;
@@ -66,6 +68,7 @@ const StaffAccounts = () => {
   const isBoss = role === "boss";
   const isItTech = role === "it_tech";
   const canManageStaff = isSuperAdmin || isBoss || isItTech;
+  const canResetPasswords = isBoss || isSuperAdmin;
 
   // Roles this user is allowed to assign in the create/edit form
   const allowedRoles = useMemo(() => {
@@ -148,6 +151,13 @@ const StaffAccounts = () => {
 
   return (
     <div className="space-y-6">
+      <Tabs defaultValue="accounts" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="accounts">Staff Accounts</TabsTrigger>
+          <TabsTrigger value="reset-requests">Password Reset Requests</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="accounts" className="space-y-6 mt-0">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-charcoal">Staff Account Management</h1>
