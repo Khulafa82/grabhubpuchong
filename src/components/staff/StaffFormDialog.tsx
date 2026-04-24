@@ -147,9 +147,13 @@ export const StaffFormDialog = ({
         );
       } else {
         if (!f.id) throw new Error("Missing staff id");
-        const { error } = await supabase.from("staff_profiles").update(payload).eq("id", f.id);
-        if (error) throw error;
-        toast.success("Staff account updated");
+        const { data, error } = await supabase.functions.invoke("update-staff", {
+          body: { user_id: f.id, ...payload },
+        });
+        const errMsg =
+          (data && typeof data === "object" && "error" in data && (data as { error?: string }).error) || null;
+        if (error || errMsg) throw new Error(errMsg || error?.message || "Failed to update account");
+        toast.success("Staff account updated successfully");
       }
       onSaved?.();
       onOpenChange(false);
