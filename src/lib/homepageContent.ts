@@ -98,12 +98,10 @@ export const fetchHomepageContent = async (): Promise<HomepageContent> => {
   const rows = (data ?? []) as DbRow[];
   const merged: HomepageContent = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONTENT));
   for (const row of rows) {
-    if (row.section_key in merged) {
-      // shallow-merge per section
-      (merged as Record<string, unknown>)[row.section_key] = {
-        ...(merged as Record<string, Record<string, unknown>>)[row.section_key],
-        ...(row.content ?? {}),
-      };
+    const key = row.section_key as SectionKey;
+    if (key in merged) {
+      const target = merged as unknown as Record<string, Record<string, unknown>>;
+      target[key] = { ...target[key], ...(row.content as Record<string, unknown>) };
     }
   }
   return merged;
