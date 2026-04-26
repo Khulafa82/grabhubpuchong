@@ -1,6 +1,6 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Menu, X, LayoutDashboard, UserCog, LogOut, Loader2 } from "lucide-react";
+import { Menu, X, LayoutDashboard, UserCog, LogOut, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "./Logo";
 import { useAuth } from "@/context/AuthContext";
@@ -14,6 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { canEditHomepage } from "@/lib/homepageContent";
+import { useHomepageEdit } from "@/context/HomepageEditContext";
 
 const links = [
   { to: "/", label: "Home" },
@@ -44,6 +46,8 @@ export const Navbar = () => {
   const [signingOut, setSigningOut] = useState(false);
   const { profile, session, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { open: openEditor } = useHomepageEdit();
 
   // If logged in but profile missing/inactive, sign out
   useEffect(() => {
@@ -54,6 +58,8 @@ export const Navbar = () => {
   }, [loading, session, profile, signOut]);
 
   const isLoggedIn = !!session && !!profile && profile.status === "active";
+  const showEditHomepage =
+    isLoggedIn && location.pathname === "/" && canEditHomepage(profile?.role);
   const dashboardPath = profile ? ROLE_TO_PATH[profile.role] : "/staff-login";
   const roleLabel = profile ? ROLE_LABEL[profile.role] ?? profile.role : "";
   const displayName = profile?.full_name?.trim() || "Staff User";
@@ -136,6 +142,16 @@ export const Navbar = () => {
         <div className="hidden lg:flex items-center gap-2">
           {isLoggedIn ? (
             <>
+              {showEditHomepage && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={openEditor}
+                  className="gap-1.5"
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Edit Homepage
+                </Button>
+              )}
               <ProfileMenu />
               <Button asChild size="sm" className="gradient-brand shadow-brand">
                 <Link to="/register">Register Now</Link>
@@ -175,6 +191,16 @@ export const Navbar = () => {
             {isLoggedIn ? (
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
                 <ProfileMenu inMobile />
+                {showEditHomepage && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => { setOpen(false); openEditor(); }}
+                    className="gap-1.5 justify-start"
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> Edit Homepage
+                  </Button>
+                )}
                 <Button asChild size="sm" className="gradient-brand">
                   <Link to="/register" onClick={() => setOpen(false)}>Register Now</Link>
                 </Button>
