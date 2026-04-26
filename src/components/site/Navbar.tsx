@@ -59,7 +59,10 @@ export const Navbar = () => {
 
   const isLoggedIn = !!session && !!profile && profile.status === "active";
   const showEditHomepage =
-    isLoggedIn && location.pathname === "/" && canEditHomepage(profile?.role);
+    !loading &&
+    isLoggedIn &&
+    location.pathname === "/" &&
+    canEditHomepage(profile?.role);
   const dashboardPath = profile ? ROLE_TO_PATH[profile.role] : "/staff-login";
   const roleLabel = profile ? ROLE_LABEL[profile.role] ?? profile.role : "";
   const displayName = profile?.full_name?.trim() || "Staff User";
