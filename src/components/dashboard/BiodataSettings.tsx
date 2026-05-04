@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Save, Upload, ShieldCheck, User as UserIcon, KeyRound, Calendar as CalIcon, MapPin, BadgeCheck, AlertCircle } from "lucide-react";
+import { Loader2, Save, Upload, ShieldCheck, User as UserIcon, KeyRound, Calendar as CalIcon, MapPin, BadgeCheck, AlertCircle, Pencil, X, Mail, Phone, Briefcase, Activity } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -68,7 +68,10 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
   const [phone, setPhone] = useState("");
   const [emergency, setEmergency] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
+  const [branchHub, setBranchHub] = useState("");
+  const [employmentStatus, setEmploymentStatus] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   // password
   const [currentPw, setCurrentPw] = useState("");
@@ -101,6 +104,8 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
         setPhone(p.phone_number ?? "");
         setEmergency(p.emergency_contact ?? "");
         setPhotoUrl(p.profile_photo_url ?? "");
+        setBranchHub(p.branch_hub ?? "");
+        setEmploymentStatus(p.employment_status ?? "");
       }
       setLoading(false);
     })();
@@ -111,22 +116,54 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
 
   const profileDirty =
     !!data &&
-    (fullName !== (data.full_name ?? "") ||
-      email !== (data.email ?? "") ||
-      phone !== (data.phone_number ?? "") ||
+    (phone !== (data.phone_number ?? "") ||
       emergency !== (data.emergency_contact ?? "") ||
-      photoUrl !== (data.profile_photo_url ?? ""));
+      photoUrl !== (data.profile_photo_url ?? "") ||
+      branchHub !== (data.branch_hub ?? "") ||
+      employmentStatus !== (data.employment_status ?? ""));
+
+  const REQUIRED_FOR_COMPLETION: Array<keyof FullProfile> = [
+    "full_name",
+    "email",
+    "phone_number",
+    "emergency_contact",
+    "branch_hub",
+  ];
+  const missingFields = data
+    ? REQUIRED_FOR_COMPLETION.filter((k) => {
+        const v = (data as unknown as Record<string, unknown>)[k as string];
+        return !v || (typeof v === "string" && !v.trim());
+      })
+    : [];
+  const isIncomplete = missingFields.length > 0;
+
+  const cancelEdit = () => {
+    if (!data) return;
+    setPhone(data.phone_number ?? "");
+    setEmergency(data.emergency_contact ?? "");
+    setPhotoUrl(data.profile_photo_url ?? "");
+    setBranchHub(data.branch_hub ?? "");
+    setEmploymentStatus(data.employment_status ?? "");
+    setEditMode(false);
+  };
 
   const saveProfile = async () => {
     if (!data) return;
     setSaving(true);
     const payload: Record<string, unknown> = {
-      full_name: fullName.trim() || null,
-      email: email.trim() || null,
       phone_number: phone.trim() || null,
       emergency_contact: emergency.trim() || null,
       profile_photo_url: photoUrl.trim() || null,
+      branch_hub: branchHub.trim() || null,
+      employment_status: employmentStatus.trim() || null,
     };
+    // Compute profile_completed based on resulting values
+    const merged = { ...data, ...payload } as Record<string, unknown>;
+    const stillMissing = REQUIRED_FOR_COMPLETION.some((k) => {
+      const v = merged[k as string];
+      return !v || (typeof v === "string" && !(v as string).trim());
+    });
+    payload.profile_completed = !stillMissing;
     const { data: updated, error } = await supabase
       .from("staff_profiles")
       .update(payload)
@@ -144,6 +181,7 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
     }
     setData(updated as unknown as FullProfile);
     toast.success("Profile updated");
+    setEditMode(false);
     await refreshProfile();
   };
 
@@ -337,62 +375,106 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
 
         {/* PROFILE TAB */}
         <TabsContent value="profile" className="space-y-6 m-0">
-          {/* Personal Biodata (read-only-ish) */}
+          {isIncomplete && (
+            <Card className="p-4 border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20 flex items-start gap-3">
+              <AlertCircle className="w-4 h-4 mt-0.5 text-amber-600 shrink-0" />
+              <div className="flex-1 text-sm">
+                <div className="font-medium text-amber-900 dark:text-amber-200">
+                  Profile information incomplete. Please complete your biodata.
+                </div>
+                <div className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-1">
+                  Missing: {missingFields.join(", ").replace(/_/g, " ")}
+                </div>
+              </div>
+              {!editMode && (
+                <Button size="sm" onClick={() => setEditMode(true)} className="gradient-brand">
+                  <Pencil className="w-3.5 h-3.5 mr-1.5" /> Complete now
+                </Button>
+              )}
+            </Card>
+          )}
+
+          {/* Personal biodata */}
           <Card className="p-6">
-            <h3 className="font-semibold text-charcoal mb-4">Personal biodata</h3>
-            <div className="grid sm:grid-cols-2 gap-4 text-sm">
-              <Field label="Username" icon={UserIcon}>{data.username ?? "—"}</Field>
-              <Field label="Role" icon={ShieldCheck}>{data.role ?? "—"}</Field>
-              <Field label="Employment status" icon={BadgeCheck}>{data.employment_status ?? "—"}</Field>
-              <Field label="Branch / Hub" icon={MapPin}>{data.branch_hub ?? "—"}</Field>
-              <Field label="Joined date" icon={CalIcon}>{fmtDate(data.joined_date)}</Field>
-              <Field label="Last login" icon={CalIcon}>{fmtDT(data.last_login_at)}</Field>
-              <Field label="Profile completed" icon={BadgeCheck}>{data.profile_completed ? "Yes" : "No"}</Field>
-              <Field label="First login completed" icon={BadgeCheck}>{data.first_login_completed ? "Yes" : "No"}</Field>
-            </div>
-          </Card>
-
-          {/* Editable */}
-          <Card className="p-6 space-y-5">
-            <h3 className="font-semibold text-charcoal">Edit your details</h3>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="full_name">Full name</Label>
-                <Input id="full_name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={120} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="phone">Phone number</Label>
-                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={32} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="emergency">Emergency contact</Label>
-                <Input id="emergency" value={emergency} onChange={(e) => setEmergency(e.target.value)} maxLength={120} />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="photo_url">Profile photo URL</Label>
-                <Input
-                  id="photo_url"
-                  value={photoUrl}
-                  onChange={(e) => setPhotoUrl(e.target.value)}
-                  placeholder="https://… (or use the upload button on your avatar)"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Upload via the camera button on your avatar, or paste a direct image URL.
-                </p>
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-charcoal">Personal biodata</h3>
+              {!editMode ? (
+                <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
+                  <Pencil className="w-3.5 h-3.5 mr-1.5" /> Edit Biodata
+                </Button>
+              ) : (
+                <Button size="sm" variant="ghost" onClick={cancelEdit} disabled={saving}>
+                  <X className="w-3.5 h-3.5 mr-1.5" /> Cancel
+                </Button>
+              )}
             </div>
 
-            <div className="flex justify-end">
-              <Button onClick={saveProfile} disabled={!profileDirty || saving} className="gradient-brand">
-                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                Save changes
-              </Button>
-            </div>
+            {!editMode ? (
+              <div className="grid sm:grid-cols-2 gap-4 text-sm">
+                <Field label="Full name" icon={UserIcon}>{data.full_name ?? "—"}</Field>
+                <Field label="Username" icon={UserIcon}>{data.username ?? "—"}</Field>
+                <Field label="Email" icon={Mail}>{data.email ?? "—"}</Field>
+                <Field label="Phone number" icon={Phone}>{data.phone_number ?? "—"}</Field>
+                <Field label="Role" icon={ShieldCheck}>{data.role ?? "—"}</Field>
+                <Field label="Employment status" icon={Briefcase}>{data.employment_status ?? "—"}</Field>
+                <Field label="Branch / Hub" icon={MapPin}>{data.branch_hub ?? "—"}</Field>
+                <Field label="Joined date" icon={CalIcon}>{fmtDate(data.joined_date)}</Field>
+                <Field label="Emergency contact" icon={Phone}>{data.emergency_contact ?? "—"}</Field>
+                <Field label="Last login" icon={CalIcon}>{fmtDT(data.last_login_at)}</Field>
+                <Field label="Availability" icon={Activity}>{data.availability_status ?? "—"}</Field>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Full name</Label>
+                    <Input value={data.full_name ?? ""} disabled />
+                    <p className="text-xs text-muted-foreground">Managed by management.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Email</Label>
+                    <Input value={data.email ?? ""} disabled />
+                    <p className="text-xs text-muted-foreground">Managed by management.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="phone">Phone number</Label>
+                    <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={32} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="emergency">Emergency contact</Label>
+                    <Input id="emergency" value={emergency} onChange={(e) => setEmergency(e.target.value)} maxLength={120} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="branch">Branch / Hub</Label>
+                    <Input id="branch" value={branchHub} onChange={(e) => setBranchHub(e.target.value)} maxLength={120} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="emp">Employment status</Label>
+                    <Input id="emp" value={employmentStatus} onChange={(e) => setEmploymentStatus(e.target.value)} maxLength={60} placeholder="e.g. Full-time, Contract" />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="photo_url">Profile photo URL</Label>
+                    <Input
+                      id="photo_url"
+                      value={photoUrl}
+                      onChange={(e) => setPhotoUrl(e.target.value)}
+                      placeholder="https://… (or use the upload button on your avatar)"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Upload via the camera button on your avatar, or paste a direct image URL.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={cancelEdit} disabled={saving}>Cancel</Button>
+                  <Button onClick={saveProfile} disabled={!profileDirty || saving} className="gradient-brand">
+                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save changes
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
         </TabsContent>
 
@@ -444,15 +526,6 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
                   Update password
                 </Button>
               </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="font-semibold text-charcoal mb-4">Account flags</h3>
-            <div className="grid sm:grid-cols-3 gap-4 text-sm">
-              <Field label="Account locked">{data.account_locked ? "Yes" : "No"}</Field>
-              <Field label="Email verified">{data.email_verified ? "Yes" : "No"}</Field>
-              <Field label="Profile completed">{data.profile_completed ? "Yes" : "No"}</Field>
             </div>
           </Card>
         </TabsContent>
