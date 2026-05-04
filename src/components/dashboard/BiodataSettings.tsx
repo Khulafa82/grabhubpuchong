@@ -131,7 +131,7 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
   ];
   const missingFields = data
     ? REQUIRED_FOR_COMPLETION.filter((k) => {
-        const v = (data as Record<string, unknown>)[k as string];
+        const v = (data as unknown as Record<string, unknown>)[k as string];
         return !v || (typeof v === "string" && !v.trim());
       })
     : [];
