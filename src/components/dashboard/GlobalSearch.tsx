@@ -148,6 +148,17 @@ export const GlobalSearch = ({ role }: Props) => {
 
   const hasResults = customers.length > 0 || staff.length > 0;
 
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (customers[0]) return goCustomer(customers[0]);
+      if (staff[0]) return goStaff(staff[0]);
+    }
+    if (e.key === "Escape") {
+      setOpen(false);
+    }
+  };
+
   return (
     <div ref={wrapRef} className="relative flex-1 max-w-md hidden md:block">
       <div className="flex items-center gap-2">
@@ -159,6 +170,7 @@ export const GlobalSearch = ({ role }: Props) => {
             setOpen(true);
           }}
           onFocus={() => q && setOpen(true)}
+          onKeyDown={onKeyDown}
           placeholder="Search customers, staff, IDs, phone..."
           className="border-0 focus-visible:ring-0 px-0"
         />
