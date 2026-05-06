@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, ShieldCheck, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,19 @@ import { Logo } from "@/components/site/Logo";
 import { supabase, ROLE_TO_PATH, StaffRole } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
+const RECAPTCHA_SITE_KEY = "6Ldn5p4sAAAAAA5Mrjnt_mDjLfcsadxqwxFBIsGd";
+
+declare global {
+  interface Window {
+    grecaptcha?: {
+      render: (el: HTMLElement, opts: Record<string, unknown>) => number;
+      reset: (id?: number) => void;
+      getResponse: (id?: number) => string;
+    };
+    onRecaptchaLoad?: () => void;
+  }
+}
+
 const StaffLogin = () => {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
@@ -18,6 +31,50 @@ const StaffLogin = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<number | null>(null);
+
+  // Load reCAPTCHA script and render widget
+  useEffect(() => {
+    const renderWidget = () => {
+      if (!window.grecaptcha || !captchaRef.current || widgetIdRef.current !== null) return;
+      try {
+        widgetIdRef.current = window.grecaptcha.render(captchaRef.current, {
+          sitekey: RECAPTCHA_SITE_KEY,
+          callback: (token: string) => setCaptchaToken(token),
+          "expired-callback": () => setCaptchaToken(null),
+          "error-callback": () => setCaptchaToken(null),
+        });
+      } catch {
+        // already rendered
+      }
+    };
+
+    if (window.grecaptcha) {
+      renderWidget();
+    } else {
+      window.onRecaptchaLoad = renderWidget;
+      const existing = document.querySelector('script[data-recaptcha]');
+      if (!existing) {
+        const s = document.createElement("script");
+        s.src = "https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit";
+        s.async = true;
+        s.defer = true;
+        s.setAttribute("data-recaptcha", "true");
+        document.head.appendChild(s);
+      }
+    }
+  }, []);
+
+  const resetCaptcha = () => {
+    setCaptchaToken(null);
+    try {
+      window.grecaptcha?.reset(widgetIdRef.current ?? undefined);
+    } catch {
+      /* noop */
+    }
+  };
 
   // Auto-redirect if already signed in with valid profile
   useEffect(() => {
@@ -34,36 +91,42 @@ const StaffLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!captchaToken) {
+      setError("Please complete the reCAPTCHA verification.");
+      return;
+    }
+
     setLoading(true);
 
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
+    const { data: fnData, error: fnError } = await supabase.functions.invoke(
+      "staff-login-with-recaptcha",
+      { body: { email: email.trim(), password, recaptchaToken: captchaToken } },
+    );
+
+    if (fnError || !fnData || (fnData as { error?: string }).error) {
+      const msg =
+        (fnData as { error?: string })?.error ||
+        fnError?.message ||
+        "Invalid credentials. Please try again.";
+      setError(msg);
+      resetCaptcha();
+      setLoading(false);
+      return;
+    }
+
+    const { session, profile: prof } = fnData as {
+      session: { access_token: string; refresh_token: string };
+      profile: { role: StaffRole; first_login_completed?: boolean | null };
+    };
+
+    const { error: setErr } = await supabase.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
     });
-
-    if (signInError || !data.user) {
-      setError(signInError?.message || "Invalid credentials. Please try again.");
-      setLoading(false);
-      return;
-    }
-
-    // Fetch staff profile
-    const { data: prof, error: profErr } = await supabase
-      .from("staff_profiles")
-      .select("*")
-      .eq("id", data.user.id)
-      .maybeSingle();
-
-    if (profErr || !prof) {
-      await supabase.auth.signOut();
-      setError("Access denied. No staff profile found for this account.");
-      setLoading(false);
-      return;
-    }
-
-    if (prof.status !== "active") {
-      await supabase.auth.signOut();
-      setError("Your account is inactive. Please contact your administrator.");
+    if (setErr) {
+      setError(setErr.message);
+      resetCaptcha();
       setLoading(false);
       return;
     }
@@ -72,6 +135,7 @@ const StaffLogin = () => {
     if (!path) {
       await supabase.auth.signOut();
       setError("Your account role is not recognized.");
+      resetCaptcha();
       setLoading(false);
       return;
     }
@@ -138,7 +202,8 @@ const StaffLogin = () => {
                 Forgot password?
               </button>
             </div>
-            <Button type="submit" disabled={loading} className="gradient-brand w-full">
+            <div ref={captchaRef} className="flex justify-center" />
+            <Button type="submit" disabled={loading || !captchaToken} className="gradient-brand w-full">
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Signing in…</> : "Sign in"}
             </Button>
           </form>
