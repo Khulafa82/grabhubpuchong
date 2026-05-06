@@ -99,33 +99,50 @@ const StaffLogin = () => {
 
     setLoading(true);
 
-    const { data: fnData, error: fnError } = await supabase.functions.invoke(
-      "staff-login-with-recaptcha",
-      { body: { email: email.trim(), password, recaptchaToken: captchaToken } },
+    // Step 1: verify reCAPTCHA via edge function
+    const { data: capData, error: capErr } = await supabase.functions.invoke(
+      "verify-recaptcha",
+      { body: { token: captchaToken } },
     );
 
-    if (fnError || !fnData || (fnData as { error?: string }).error) {
-      const msg =
-        (fnData as { error?: string })?.error ||
-        fnError?.message ||
-        "Invalid credentials. Please try again.";
-      setError(msg);
+    if (capErr || !capData || (capData as { success?: boolean }).success !== true) {
+      setError("Captcha verification failed. Please try again.");
       resetCaptcha();
       setLoading(false);
       return;
     }
 
-    const { session, profile: prof } = fnData as {
-      session: { access_token: string; refresh_token: string };
-      profile: { role: StaffRole; first_login_completed?: boolean | null };
-    };
-
-    const { error: setErr } = await supabase.auth.setSession({
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
+    // Step 2: proceed with normal Supabase auth
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
     });
-    if (setErr) {
-      setError(setErr.message);
+
+    if (signInError || !signInData.user) {
+      setError(signInError?.message || "Invalid credentials. Please try again.");
+      resetCaptcha();
+      setLoading(false);
+      return;
+    }
+
+    // Step 3: load staff profile
+    const { data: prof, error: profErr } = await supabase
+      .from("staff_profiles")
+      .select("*")
+      .eq("id", signInData.user.id)
+      .maybeSingle();
+
+    if (profErr || !prof) {
+      await supabase.auth.signOut();
+      setError("Access denied. No staff profile found for this account.");
+      resetCaptcha();
+      setLoading(false);
+      return;
+    }
+
+    if (prof.status !== "active") {
+      await supabase.auth.signOut();
+      setError("Your account is inactive. Please contact your administrator.");
       resetCaptcha();
       setLoading(false);
       return;
