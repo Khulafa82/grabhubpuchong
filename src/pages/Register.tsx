@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
   Car, Bike, MapPin, RefreshCw, UserPlus, ChevronLeft, ChevronRight,
-  Check, AlertCircle, Loader2, ShieldCheck, XCircle,
+  Check, AlertCircle, Loader2, ShieldCheck, XCircle, Footprints,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,11 @@ const GRABFOOD_LICENSES = [
   { v: "License L", label: "I only have L License", ok: false },
 ];
 
-const Register = () => {
+interface RegisterProps {
+  walkIn?: boolean;
+}
+
+const Register = ({ walkIn = false }: RegisterProps = {}) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
@@ -150,6 +154,9 @@ const Register = () => {
       blue_ic_status: blueIc === "Yes",
       license_type: licenseType,
       criminal_record_status: criminal,
+      walk_in_flag: walkIn,
+      priority_status: walkIn ? "walk_in_priority" : "normal",
+      registration_source: walkIn ? "walk_in" : "online",
     };
 
     if (userRole === "GrabCar") {
@@ -175,7 +182,7 @@ const Register = () => {
       toast({ title: "Registration failed", description: error.message, variant: "destructive" });
       return;
     }
-    navigate("/registration-success");
+    navigate(walkIn ? "/registration-success?walk_in=1" : "/registration-success");
   };
 
   // Step 1 selection auto-advance
@@ -208,6 +215,14 @@ const Register = () => {
       </header>
 
       <div className="container max-w-3xl py-10">
+        {walkIn && (
+          <div className="mb-4 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand/10 text-brand text-xs font-semibold border border-brand/20">
+              <Footprints className="w-3.5 h-3.5" /> Walk-in Registration
+            </span>
+            <span className="text-xs text-charcoal/60">In-person submission at Grab Hub Puchong</span>
+          </div>
+        )}
         {/* Progress */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2 text-sm">
