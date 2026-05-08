@@ -35,6 +35,12 @@ Deno.serve(async (req) => {
 
     const trimmed = email.trim().toLowerCase();
 
+    // Uniform response — never reveal whether email exists.
+    const uniform = json(
+      { success: true, message: "If this email is registered, a reset request has been submitted." },
+      200,
+    );
+
     const { data: profile, error: profErr } = await admin
       .from("staff_profiles")
       .select("id, email, status, full_name")
@@ -42,11 +48,30 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (profErr) {
-      return json({ error: "LOOKUP_FAILED", message: profErr.message }, 500);
+      console.error("[request-password-reset] lookup failed:", profErr.message);
+      return uniform;
     }
 
     if (!profile) {
-      return json({ error: "NOT_FOUND", message: "No staff account found with this email." }, 200);
+      return uniform;
+    }
+
+    // Per-email rate limit: max 3 requests per hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { data: recent, error: rateErr } = await admin
+      .from("staff_password_reset_requests")
+      .select("id, created_at, request_status")
+      .eq("staff_id", profile.id)
+      .gte("created_at", oneHourAgo);
+
+    if (rateErr) {
+      console.error("[request-password-reset] rate check failed:", rateErr.message);
+      return uniform;
+    }
+
+    if (recent && recent.length >= 3) {
+      console.warn("[request-password-reset] rate limit hit for staff", profile.id);
+      return uniform;
     }
 
     const { data: existing, error: dupErr } = await admin
@@ -57,11 +82,12 @@ Deno.serve(async (req) => {
       .limit(1);
 
     if (dupErr) {
-      return json({ error: "DUPLICATE_CHECK_FAILED", message: dupErr.message }, 500);
+      console.error("[request-password-reset] dup check failed:", dupErr.message);
+      return uniform;
     }
 
     if (existing && existing.length > 0) {
-      return json({ error: "ALREADY_PENDING", message: "A password reset request is already pending." }, 200);
+      return uniform;
     }
 
     const { error: insertErr } = await admin
@@ -74,11 +100,16 @@ Deno.serve(async (req) => {
       });
 
     if (insertErr) {
-      return json({ error: "INSERT_FAILED", message: insertErr.message }, 500);
+      console.error("[request-password-reset] insert failed:", insertErr.message);
+      return uniform;
     }
 
-    return json({ success: true, message: "Reset request submitted." }, 200);
+    return uniform;
   } catch (e) {
-    return json({ error: "UNEXPECTED", message: (e as Error).message }, 500);
+    console.error("[request-password-reset] unexpected:", (e as Error).message);
+    return json(
+      { success: true, message: "If this email is registered, a reset request has been submitted." },
+      200,
+    );
   }
 });

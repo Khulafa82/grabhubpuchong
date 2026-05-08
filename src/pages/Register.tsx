@@ -175,11 +175,16 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
       payload.vehicle_model = motorDetails.trim() || null;
     }
 
-    const { error } = await supabase.from("customers").insert(payload);
+    const { data, error } = await supabase.functions.invoke("register-customer", {
+      body: payload,
+    });
     setSubmitting(false);
 
-    if (error) {
-      toast({ title: "Registration failed", description: error.message, variant: "destructive" });
+    if (error || (data && (data as { error?: string }).error)) {
+      const msg =
+        (data as { message?: string } | null)?.message ||
+        "Could not submit your registration. Please try again.";
+      toast({ title: "Registration failed", description: msg, variant: "destructive" });
       return;
     }
     navigate(walkIn ? "/registration-success?walk_in=1" : "/registration-success");
