@@ -39,6 +39,30 @@ Deno.serve(async (req) => {
 
     // Update with service role
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    // Security: verify a password change actually happened recently.
+    // We require the auth user's updated_at to be newer than created_at
+    // AND within the last 10 minutes (i.e. user just updated password).
+    const { data: authUser, error: authErr } = await admin.auth.admin.getUserById(
+      userData.user.id,
+    );
+    if (authErr || !authUser?.user) {
+      return new Response(JSON.stringify({ error: "User lookup failed" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const created = new Date(authUser.user.created_at ?? 0).getTime();
+    const updated = new Date(authUser.user.updated_at ?? 0).getTime();
+    const now = Date.now();
+    const recentlyChanged = updated > created + 1000 && now - updated < 10 * 60 * 1000;
+    if (!recentlyChanged) {
+      return new Response(
+        JSON.stringify({ error: "Password change not detected. Please update your password first." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const { error: updErr } = await admin
       .from("staff_profiles")
       .update({ first_login_completed: true })
