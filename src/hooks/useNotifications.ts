@@ -121,7 +121,7 @@ export const useNotifications = () => {
       // 1. Recent new customers (last 7 days)
       const newCustomersQ = supabase
         .from("customers")
-        .select("id, applicant_id, full_name, customer_status, created_at, registration_source, account_status")
+        .select("id, applicant_id, full_name, customer_status, created_at, walk_in_flag, priority_status, account_status")
         .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -214,8 +214,8 @@ export const useNotifications = () => {
       pushIfOk(newCustRes, (rows) => {
         for (const c of rows) {
           const isWalk =
-            (c.registration_source ?? "").toString().toLowerCase().includes("walk") ||
-            (c.account_status ?? "").toString().toLowerCase().includes("walk");
+            c.walk_in_flag === true ||
+            (c.priority_status ?? "").toString().toLowerCase().includes("walk");
           collected.push({
             id: `new:${c.id}`,
             kind: isWalk ? "walk_in" : "new_customer",
