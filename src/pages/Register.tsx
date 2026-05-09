@@ -156,10 +156,14 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
       criminal_record_status: criminal,
       walk_in_flag: walkIn,
       priority_status: walkIn ? "walk_in_priority" : "normal",
+      eligibility_status: eligibilityPassed ? "eligible" : "rejected",
+      assignment_status: "unassigned",
+      customer_status: "new",
+      bolt_status: "not_submitted",
     };
 
     if (userRole === "GrabCar") {
-      payload.psv_license_status = psv;
+      payload.psv_license_status = psv === "have_psv" ? "have_psv" : "no_psv";
       payload.has_car = carAvailable === "Yes";
       payload.car_model = carAvailable === "Yes" ? carModel.trim() || null : null;
       payload.car_year = carAvailable === "Yes" && carYear.trim()
@@ -174,16 +178,16 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
       payload.vehicle_model = motorDetails.trim() || null;
     }
 
-    const { data, error } = await supabase.functions.invoke("register-customer", {
-      body: payload,
-    });
+    const { error } = await supabase.from("customers").insert(payload);
     setSubmitting(false);
 
-    if (error || (data && (data as { error?: string }).error)) {
-      const msg =
-        (data as { message?: string } | null)?.message ||
-        "Could not submit your registration. Please try again.";
-      toast({ title: "Registration failed", description: msg, variant: "destructive" });
+    if (error) {
+      console.error("Registration insert error:", error);
+      toast({
+        title: "Registration failed",
+        description: error.message || "Unknown error",
+        variant: "destructive",
+      });
       return;
     }
     navigate(walkIn ? "/registration-success?walk_in=1" : "/registration-success");
