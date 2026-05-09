@@ -156,7 +156,6 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
       criminal_record_status: criminal,
       walk_in_flag: walkIn,
       priority_status: walkIn ? "walk_in_priority" : "normal",
-      registration_source: walkIn ? "walk_in" : "online",
     };
 
     if (userRole === "GrabCar") {
