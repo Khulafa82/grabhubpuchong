@@ -1,3 +1,2 @@
-# Welcome to your Lovable project
+Khulafa I FYP Project
 
-TODO: Document your project here
