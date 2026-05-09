@@ -167,7 +167,6 @@ Deno.serve(async (req) => {
       criminal_record_status: criminal || null,
       walk_in_flag: walkInFlag,
       priority_status: walkInFlag ? "walk_in_priority" : "normal",
-      registration_source: walkInFlag ? "walk_in" : "online",
     };
 
     if (userRole === "GrabCar") {
