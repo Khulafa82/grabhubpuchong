@@ -28,6 +28,7 @@ import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useITTechData, StaffRow, CustomerAssignmentRow } from "@/hooks/useITTechData";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 const items = [
   { label: "Dashboard Overview", to: "/it-tech", icon: LayoutDashboard },
@@ -98,6 +99,25 @@ const useRecentAuditLogs = (limit = 5) => {
   return { logs, loading, error };
 };
 
+const useSystemAlertsCount = () => {
+  const [count, setCount] = useState<number | null>(null);
+  const [tick, setTick] = useState(0);
+  const refetch = () => setTick((t) => t + 1);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { count: c, error } = await supabase
+        .from("activity_logs")
+        .select("id", { count: "exact", head: true })
+        .in("severity", ["high", "critical"]);
+      if (cancelled) return;
+      setCount(error ? 0 : c ?? 0);
+    })();
+    return () => { cancelled = true; };
+  }, [tick]);
+  return { count, refetch };
+};
+
 const Overview = () => {
   const { counts, loading: statsLoading, error: statsError } = useDashboardStats([
     {
@@ -124,6 +144,7 @@ const Overview = () => {
 
   const { staff, customers, duplicateCount, loading, error, refetch } = useITTechData();
   const { logs: recentLogs, loading: logsLoading, error: logsError } = useRecentAuditLogs(5);
+  const { count: alertsCount, refetch: refetchAlerts } = useSystemAlertsCount();
   const [editing, setEditing] = useState<CustomerAssignmentRow | null>(null);
 
   const admins = useMemo(() => staff.filter((s) => s.role === "admin"), [staff]);
@@ -166,7 +187,7 @@ const Overview = () => {
         <StatCard label="Unassigned Customers" value={v("unassigned")} icon={Shuffle} />
         <StatCard label="Duplicate Alerts" value={loading ? "…" : duplicateCount.toLocaleString()} icon={Copy} accent="muted" />
         <StatCard label="Locked Accounts" value={v("lockedAccounts")} icon={Lock} />
-        <StatCard label="System Alerts" value="—" icon={AlertTriangle} accent="muted" />
+        <StatCard label="System Alerts" value={alertsCount === null ? "…" : alertsCount.toLocaleString()} icon={AlertTriangle} accent="muted" />
       </div>
 
       {/* Staff Account Management */}
@@ -195,7 +216,7 @@ const Overview = () => {
               </thead>
               <tbody>
                 {staff.map((s) => (
-                  <StaffActionRow key={s.id} row={s} onChange={refetch} />
+                  <StaffActionRow key={s.id} row={s} onChange={() => { refetch(); refetchAlerts(); }} />
                 ))}
               </tbody>
             </table>
