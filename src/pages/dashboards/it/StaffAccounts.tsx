@@ -70,6 +70,45 @@ const StaffAccounts = () => {
   const canManageStaff = isSuperAdmin || isBoss || isItTech;
   const canResetPasswords = isBoss || isSuperAdmin;
 
+  // IT Tech can only lock/unlock admin accounts (not self, not boss/it_tech/super_admin)
+  const canToggleLock = (s: Staff) => {
+    if (!canManageStaff) return false;
+    if (s.id === profile?.id) return false;
+    if (isItTech) return s.role === "admin";
+    if (isBoss) return s.role !== "super_admin";
+    if (isSuperAdmin) return true;
+    return false;
+  };
+
+  const toggleLock = async (s: Staff) => {
+    const next = !s.account_locked;
+    setBusyId(s.id);
+    const { error } = await supabase
+      .from("staff_profiles")
+      .update({ account_locked: next })
+      .eq("id", s.id);
+    if (error) {
+      toast.error(error.message);
+      setBusyId(null);
+      return;
+    }
+    setRows((prev) => prev.map((r) => (r.id === s.id ? { ...r, account_locked: next } : r)));
+    if (profile?.id) {
+      await supabase.from("activity_logs").insert({
+        module: "staff",
+        record_id: s.id,
+        action: next ? "lock_account" : "unlock_account",
+        description: `Staff account ${next ? "locked" : "unlocked"} by ${profile.role ?? "staff"}`,
+        performed_by: profile.id,
+        performed_by_role: profile.role,
+        severity: "high",
+        event_category: "security",
+      });
+    }
+    toast.success(next ? "Account locked" : "Account unlocked");
+    setBusyId(null);
+  };
+
   // Roles this user is allowed to assign in the create/edit form
   const allowedRoles = useMemo(() => {
     if (isSuperAdmin) return ALL_ROLE_OPTIONS;
@@ -280,7 +319,7 @@ const StaffAccounts = () => {
                             {canEditScope && manage ? "Manage Scope" : "View Scope"}
                           </Button>
                         )}
-                        <Button size="sm" variant={s.account_locked ? "default" : "outline"} disabled={busyId === s.id || !manage} onClick={() => update(s.id, { account_locked: !s.account_locked })}>
+                        <Button size="sm" variant={s.account_locked ? "default" : "outline"} disabled={busyId === s.id || !canToggleLock(s)} onClick={() => toggleLock(s)}>
                           <Lock className="w-3 h-3 mr-1" />{s.account_locked ? "Unlock" : "Lock"}
                         </Button>
                       </div>

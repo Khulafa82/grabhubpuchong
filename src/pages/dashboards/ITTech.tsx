@@ -28,6 +28,7 @@ import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useITTechData, StaffRow, CustomerAssignmentRow } from "@/hooks/useITTechData";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 const items = [
   { label: "Dashboard Overview", to: "/it-tech", icon: LayoutDashboard },
@@ -98,6 +99,25 @@ const useRecentAuditLogs = (limit = 5) => {
   return { logs, loading, error };
 };
 
+const useSystemAlertsCount = () => {
+  const [count, setCount] = useState<number | null>(null);
+  const [tick, setTick] = useState(0);
+  const refetch = () => setTick((t) => t + 1);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { count: c, error } = await supabase
+        .from("activity_logs")
+        .select("id", { count: "exact", head: true })
+        .in("severity", ["high", "critical"]);
+      if (cancelled) return;
+      setCount(error ? 0 : c ?? 0);
+    })();
+    return () => { cancelled = true; };
+  }, [tick]);
+  return { count, refetch };
+};
+
 const Overview = () => {
   const { counts, loading: statsLoading, error: statsError } = useDashboardStats([
     {
@@ -124,6 +144,7 @@ const Overview = () => {
 
   const { staff, customers, duplicateCount, loading, error, refetch } = useITTechData();
   const { logs: recentLogs, loading: logsLoading, error: logsError } = useRecentAuditLogs(5);
+  const { count: alertsCount, refetch: refetchAlerts } = useSystemAlertsCount();
   const [editing, setEditing] = useState<CustomerAssignmentRow | null>(null);
 
   const admins = useMemo(() => staff.filter((s) => s.role === "admin"), [staff]);
@@ -166,7 +187,7 @@ const Overview = () => {
         <StatCard label="Unassigned Customers" value={v("unassigned")} icon={Shuffle} />
         <StatCard label="Duplicate Alerts" value={loading ? "…" : duplicateCount.toLocaleString()} icon={Copy} accent="muted" />
         <StatCard label="Locked Accounts" value={v("lockedAccounts")} icon={Lock} />
-        <StatCard label="System Alerts" value="—" icon={AlertTriangle} accent="muted" />
+        <StatCard label="System Alerts" value={alertsCount === null ? "…" : alertsCount.toLocaleString()} icon={AlertTriangle} accent="muted" />
       </div>
 
       {/* Staff Account Management */}
@@ -195,7 +216,7 @@ const Overview = () => {
               </thead>
               <tbody>
                 {staff.map((s) => (
-                  <StaffActionRow key={s.id} row={s} onChange={refetch} />
+                  <StaffActionRow key={s.id} row={s} onChange={() => { refetch(); refetchAlerts(); }} />
                 ))}
               </tbody>
             </table>
@@ -348,6 +369,15 @@ const Overview = () => {
 
 const StaffActionRow = ({ row, onChange }: { row: StaffRow; onChange: () => void }) => {
   const [busy, setBusy] = useState(false);
+  const { profile } = useAuth();
+  const myRole = profile?.role;
+  const canToggleLock = (() => {
+    if (row.id === profile?.id) return false;
+    if (myRole === "it_tech") return row.role === "admin";
+    if (myRole === "boss") return row.role !== "super_admin";
+    if (myRole === "super_admin") return true;
+    return false;
+  })();
 
   const update = async (patch: Partial<StaffRow>) => {
     setBusy(true);
@@ -358,6 +388,35 @@ const StaffActionRow = ({ row, onChange }: { row: StaffRow; onChange: () => void
       toast.success("Updated");
       onChange();
     }
+  };
+
+  const toggleLock = async () => {
+    const next = !row.account_locked;
+    setBusy(true);
+    const { error } = await supabase
+      .from("staff_profiles")
+      .update({ account_locked: next })
+      .eq("id", row.id);
+    if (error) {
+      setBusy(false);
+      toast.error(error.message);
+      return;
+    }
+    if (profile?.id) {
+      await supabase.from("activity_logs").insert({
+        module: "staff",
+        record_id: row.id,
+        action: next ? "lock_account" : "unlock_account",
+        description: `Staff account ${next ? "locked" : "unlocked"} by ${myRole ?? "staff"}`,
+        performed_by: profile.id,
+        performed_by_role: myRole,
+        severity: "high",
+        event_category: "security",
+      });
+    }
+    setBusy(false);
+    toast.success(next ? "Account locked" : "Account unlocked");
+    onChange();
   };
 
   return (
@@ -402,8 +461,8 @@ const StaffActionRow = ({ row, onChange }: { row: StaffRow; onChange: () => void
         <Button
           size="sm"
           variant={row.account_locked ? "default" : "outline"}
-          disabled={busy}
-          onClick={() => update({ account_locked: !row.account_locked })}
+          disabled={busy || !canToggleLock}
+          onClick={toggleLock}
         >
           <Lock className="w-3 h-3 mr-1" />
           {row.account_locked ? "Unlock" : "Lock"}

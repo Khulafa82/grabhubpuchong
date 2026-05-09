@@ -187,21 +187,25 @@ export const BiodataSettings = ({ roleLabel }: Props) => {
 
   const handleUpload = async (file: File) => {
     if (!user) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be under 5MB");
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only PNG, JPEG or WEBP images are allowed");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2MB");
       return;
     }
     setUploading(true);
-    const ext = file.name.split(".").pop() ?? "png";
-    const path = `${user.id}/${Date.now()}.${ext}`;
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `staff-profiles/${user.id}/${Date.now()}-${safeName}`;
     const { error: upErr } = await supabase.storage
       .from("avatars")
-      .upload(path, file, { upsert: true, contentType: file.type });
+      .upload(path, file, { upsert: false, contentType: file.type });
     if (upErr) {
       setUploading(false);
-      toast.error(
-        `Upload failed: ${upErr.message}. Tip: ensure an "avatars" storage bucket exists, or paste an image URL below.`,
-      );
+      console.error("Avatar upload error:", upErr);
+      toast.error(`Upload failed: ${upErr.message}`);
       return;
     }
     const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
