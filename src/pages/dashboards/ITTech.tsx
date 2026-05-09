@@ -369,6 +369,15 @@ const Overview = () => {
 
 const StaffActionRow = ({ row, onChange }: { row: StaffRow; onChange: () => void }) => {
   const [busy, setBusy] = useState(false);
+  const { profile } = useAuth();
+  const myRole = profile?.role;
+  const canToggleLock = (() => {
+    if (row.id === profile?.id) return false;
+    if (myRole === "it_tech") return row.role === "admin";
+    if (myRole === "boss") return row.role !== "super_admin";
+    if (myRole === "super_admin") return true;
+    return false;
+  })();
 
   const update = async (patch: Partial<StaffRow>) => {
     setBusy(true);
@@ -379,6 +388,35 @@ const StaffActionRow = ({ row, onChange }: { row: StaffRow; onChange: () => void
       toast.success("Updated");
       onChange();
     }
+  };
+
+  const toggleLock = async () => {
+    const next = !row.account_locked;
+    setBusy(true);
+    const { error } = await supabase
+      .from("staff_profiles")
+      .update({ account_locked: next })
+      .eq("id", row.id);
+    if (error) {
+      setBusy(false);
+      toast.error(error.message);
+      return;
+    }
+    if (profile?.id) {
+      await supabase.from("activity_logs").insert({
+        module: "staff",
+        record_id: row.id,
+        action: next ? "lock_account" : "unlock_account",
+        description: `Staff account ${next ? "locked" : "unlocked"} by ${myRole ?? "staff"}`,
+        performed_by: profile.id,
+        performed_by_role: myRole,
+        severity: "high",
+        event_category: "security",
+      });
+    }
+    setBusy(false);
+    toast.success(next ? "Account locked" : "Account unlocked");
+    onChange();
   };
 
   return (
@@ -423,8 +461,8 @@ const StaffActionRow = ({ row, onChange }: { row: StaffRow; onChange: () => void
         <Button
           size="sm"
           variant={row.account_locked ? "default" : "outline"}
-          disabled={busy}
-          onClick={() => update({ account_locked: !row.account_locked })}
+          disabled={busy || !canToggleLock}
+          onClick={toggleLock}
         >
           <Lock className="w-3 h-3 mr-1" />
           {row.account_locked ? "Unlock" : "Lock"}
