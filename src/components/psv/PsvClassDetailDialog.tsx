@@ -19,6 +19,7 @@ import {
   attendanceToWorkflow,
   classBadgeClass,
   classCapacityState,
+  derivePsvClassStatus,
   formatTimeRange,
   PSV_WORKFLOW,
   psvWorkflowBadgeClass,
@@ -69,7 +70,8 @@ export const PsvClassDetailDialog = ({
 
   const canAssign = role === "admin" || role === "super_admin";
   const canEditAttendance = role === "admin" || role === "it_tech" || role === "super_admin";
-  const isFull = state === "Full" || state === "Cancelled" || state === "Completed";
+  const isCapacityFull = cap > 0 && booked >= cap;
+  const canShowAssignButton = canAssign && state !== "Cancelled" && state !== "Completed";
 
   const refreshAll = () => {
     refetch();
@@ -82,7 +84,11 @@ export const PsvClassDetailDialog = ({
     const newAvail = cap > 0 ? Math.max(cap - newBooked, 0) : 0;
     await supabase
       .from("psv_classes")
-      .update({ booked_count: newBooked, available_slots: newAvail })
+      .update({
+        booked_count: newBooked,
+        available_slots: newAvail,
+        status: derivePsvClassStatus(cap, newBooked, psvClass.status),
+      })
       .eq("id", psvClass.id);
   };
 
