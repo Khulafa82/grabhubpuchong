@@ -297,8 +297,6 @@ export const CustomerDetailDrawer = ({
       account_status: form.account_status || null,
       blue_ic_status: form.blue_ic_status,
       license_type: form.license_type || null,
-      criminal_record_status: form.criminal_record_status || null,
-      eligibility_status: form.eligibility_status || null,
       psv_license_status: form.psv_license_status || null,
       has_car: form.has_car,
       car_model: form.car_model || null,
