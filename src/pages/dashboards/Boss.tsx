@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useState } from "react";
 import {
   LayoutDashboard, Users, BarChart3, CalendarCheck, UsersRound, FileBarChart, Settings, UserCog,
@@ -26,7 +26,7 @@ import RoundRobinControl from "./boss/RoundRobinControl";
 
 const items = [
   { label: "Dashboard Overview", to: "/boss", icon: LayoutDashboard },
-  { label: "All Customer Data", to: "/boss/customers", icon: Users },
+  { label: "All Customer Data", to: "/boss/all-customers", icon: Users },
   { label: "Admin Performance", to: "/boss/performance", icon: BarChart3 },
   { label: "Leave Approval", to: "/boss/leave", icon: CalendarCheck },
   { label: "Customer Assignment", to: "/boss/assignments", icon: UsersRound },
@@ -357,7 +357,8 @@ const Boss = () => (
   <Routes>
     <Route element={<DashboardLayout role="boss" roleLabel="Boss" items={items} />}>
       <Route index element={<Overview />} />
-      <Route path="customers" element={<BossCustomers />} />
+      <Route path="all-customers" element={<BossCustomers />} />
+      <Route path="customers" element={<Navigate to="/boss/all-customers" replace />} />
       <Route path="performance" element={<BossPerformance />} />
       <Route path="leave" element={<BossLeave />} />
       <Route path="assignments" element={<BossAssignments />} />
