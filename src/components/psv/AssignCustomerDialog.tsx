@@ -60,8 +60,6 @@ export const AssignCustomerDialog = ({
         .is("psv_class_id", null)
         .in("customer_status", ELIGIBLE_STATUSES)
         .order("updated_at", { ascending: false, nullsFirst: false });
-      // Admin sees only their own customers; super_admin / IT see all.
-      if (role === "admin" && myId) q = q.eq("admin_in_charge", myId);
       const { data, error } = await q.limit(200);
       if (cancelled) return;
       if (error) {
@@ -90,7 +88,7 @@ export const AssignCustomerDialog = ({
     return () => {
       cancelled = true;
     };
-  }, [open, role, myId]);
+  }, [open]);
 
   const state = classCapacityState(psvClass);
   const cap = psvClass.capacity ?? 0;
