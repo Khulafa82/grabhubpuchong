@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Loader2, Calendar, Clock, MapPin, Users, GraduationCap, UserPlus, Phone, Pencil, Trash2, Ban } from "lucide-react";
+import { Loader2, Calendar, Clock, MapPin, Users, GraduationCap, UserPlus, Phone, Pencil, Trash2, Ban, Check, X, RotateCcw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -74,6 +74,51 @@ export const PsvClassDetailDialog = ({
   const refreshAll = () => {
     refetch();
     onChanged();
+  };
+
+  // Release one slot on the class (used when an assignment is removed/rescheduled).
+  const releaseSlot = async () => {
+    const newBooked = Math.max(booked - 1, 0);
+    const newAvail = cap > 0 ? Math.max(cap - newBooked, 0) : 0;
+    await supabase
+      .from("psv_classes")
+      .update({ booked_count: newBooked, available_slots: newAvail })
+      .eq("id", psvClass.id);
+  };
+
+  const markAttendance = async (
+    row: typeof data[number],
+    status: AttendanceStatus,
+    workflow: string,
+  ) => {
+    const { error: err } = await supabase
+      .from("psv_class_customers")
+      .update({ attendance_status: status, psv_workflow_status: workflow })
+      .eq("id", row.id);
+    if (err) return toast.error(err.message);
+    toast.success(`Marked ${status}`);
+    refreshAll();
+  };
+
+  const reschedule = async (row: typeof data[number]) => {
+    const { error: delErr } = await supabase
+      .from("psv_class_customers")
+      .delete()
+      .eq("id", row.id);
+    if (delErr) return toast.error(delErr.message);
+    const { error: custErr } = await supabase
+      .from("customers")
+      .update({
+        psv_class_id: null,
+        psv_class: null,
+        psv_class_date: null,
+        psv_class_location: null,
+      })
+      .eq("id", row.customer_id);
+    if (custErr) return toast.error(custErr.message);
+    await releaseSlot();
+    toast.success("Customer released for rescheduling");
+    refreshAll();
   };
 
   const filteredAssignments = useMemo(() => {
@@ -231,24 +276,32 @@ export const PsvClassDetailDialog = ({
                         {row.attendance_status ?? "Pending"}
                       </Badge>
                       {allowEdit && (
-                        <AttendanceSelect
-                          value={(row.attendance_status as AttendanceStatus) ?? "Pending"}
-                          onChange={async (v) => {
-                            const { error: err } = await supabase
-                              .from("psv_class_customers")
-                              .update({
-                                attendance_status: v,
-                                psv_workflow_status: attendanceToWorkflow(v),
-                              })
-                              .eq("id", row.id);
-                            if (err) {
-                              toast.error(err.message);
-                              return;
-                            }
-                            toast.success("Attendance updated");
-                            refreshAll();
-                          }}
-                        />
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8"
+                            onClick={() => markAttendance(row, "Attended", PSV_WORKFLOW.COMPLETED)}
+                          >
+                            <Check className="w-3.5 h-3.5 mr-1" /> Attended
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-destructive hover:text-destructive"
+                            onClick={() => markAttendance(row, "Absent", PSV_WORKFLOW.FAILED)}
+                          >
+                            <X className="w-3.5 h-3.5 mr-1" /> Absent
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8"
+                            onClick={() => reschedule(row)}
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reschedule
+                          </Button>
+                        </div>
                       )}
                       {allowEdit && (
                         <Button
@@ -261,6 +314,17 @@ export const PsvClassDetailDialog = ({
                               .delete()
                               .eq("id", row.id);
                             if (err) return toast.error(err.message);
+                            // Clear the customer's mirrored class info and free a slot.
+                            await supabase
+                              .from("customers")
+                              .update({
+                                psv_class_id: null,
+                                psv_class: null,
+                                psv_class_date: null,
+                                psv_class_location: null,
+                              })
+                              .eq("id", row.customer_id);
+                            await releaseSlot();
                             toast.success("Removed from class");
                             refreshAll();
                           }}

@@ -77,9 +77,18 @@ export const PsvClassFormDialog = ({ open, onOpenChange, initial, defaultDate, o
       notes: form.notes || null,
       status: form.status,
     };
-    const q = initial
-      ? supabase.from("psv_classes").update(payload).eq("id", initial.id)
-      : supabase.from("psv_classes").insert(payload);
+    let q;
+    if (initial) {
+      // When capacity changes, recompute available_slots = capacity - booked_count
+      const booked = initial.booked_count ?? 0;
+      (payload as any).available_slots = Math.max(cap - booked, 0);
+      q = supabase.from("psv_classes").update(payload).eq("id", initial.id);
+    } else {
+      (payload as any).booked_count = 0;
+      (payload as any).available_slots = cap;
+      (payload as any).status = form.status || "Open";
+      q = supabase.from("psv_classes").insert(payload);
+    }
     const { error } = await q;
     setSaving(false);
     if (error) return toast.error(error.message);
