@@ -18,15 +18,8 @@ interface Eligible {
   admin_in_charge: string | null;
 }
 
-// Eligible = admin's own customers in psv_required / under_review / pending workflow.
-const ELIGIBLE_STATUSES = [
-  "psv_required",
-  "under_review",
-  "pending_documents",
-  "waiting_customer_response",
-  "contacted",
-  "new",
-];
+// Eligible = GrabCar customers without a PSV license, not yet assigned to any class.
+const ELIGIBLE_STATUSES = ["new", "contacted", "psv_required", "under_review"];
 
 interface Props {
   open: boolean;
@@ -60,6 +53,9 @@ export const AssignCustomerDialog = ({
       let q = supabase
         .from("customers")
         .select("id, full_name, phone_number, applicant_id, customer_status, admin_in_charge")
+        .eq("user_role", "GrabCar")
+        .eq("psv_license_status", "no_psv")
+        .is("psv_class_id", null)
         .in("customer_status", ELIGIBLE_STATUSES)
         .order("updated_at", { ascending: false, nullsFirst: false });
       // Admin sees only their own customers; super_admin / IT see all.
@@ -116,11 +112,35 @@ export const AssignCustomerDialog = ({
       attendance_status: "Pending",
       psv_workflow_status: PSV_WORKFLOW.ASSIGNED,
     });
-    setBusyId(null);
     if (error) {
+      setBusyId(null);
       toast.error(error.message);
       return;
     }
+    // Mirror class info onto the customer record.
+    const { error: custErr } = await supabase
+      .from("customers")
+      .update({
+        psv_class_id: psvClass.id,
+        psv_class: psvClass.title,
+        psv_class_date: psvClass.class_date,
+        psv_class_location: psvClass.location,
+        customer_status: "psv_required",
+      })
+      .eq("id", customer.id);
+    if (custErr) {
+      setBusyId(null);
+      toast.error(custErr.message);
+      return;
+    }
+    // Increment booked_count / decrement available_slots.
+    const newBooked = booked + 1;
+    const newAvail = Math.max(cap - newBooked, 0);
+    await supabase
+      .from("psv_classes")
+      .update({ booked_count: newBooked, available_slots: newAvail })
+      .eq("id", psvClass.id);
+    setBusyId(null);
     toast.success(`${customer.full_name ?? "Customer"} assigned to class`);
     onAssigned();
     onOpenChange(false);
