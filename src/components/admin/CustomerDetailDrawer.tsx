@@ -202,7 +202,7 @@ const toForm = (c: Customer): FormState => ({
   duplicate_reason: c.duplicate_reason ?? "",
 });
 
-const USER_ROLE_OPTIONS = ["GrabCar", "GrabFood", "GrabExpress", "Bolt"];
+const USER_ROLE_OPTIONS = ["GrabCar", "GrabFood"];
 const ACCOUNT_STATUS_OPTIONS = ["new", "active", "suspended", "closed"];
 const ELIGIBILITY_OPTIONS = [
   { label: "Eligible", value: "eligible" },
