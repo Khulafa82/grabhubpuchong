@@ -14,11 +14,11 @@ import {
 } from "@/components/ui/dialog";
 import {
   Phone, MessageCircle, Copy, CheckCircle2, Search, X, Loader2,
-  CalendarClock, StickyNote, Eye,
+  CalendarClock, StickyNote, Eye, Pencil, ExternalLink,
 } from "lucide-react";
 import {
   Customer, statusBadgeClass, priorityBadgeClass, isOverdue, isToday,
-  telLink, waLink, CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
+  waLink, CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
 } from "@/lib/customers";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -28,7 +28,7 @@ interface Props {
   loading: boolean;
   error: string | null;
   refetch: () => void;
-  onEdit: (c: Customer) => void;
+  onEdit: (c: Customer, options?: { tab?: "overview" | "personal" | "application" | "vehicle" | "notes"; focusBoltUrl?: boolean }) => void;
 }
 
 const isUpcoming = (date?: string | null) => {
@@ -101,6 +101,16 @@ export const ContactListView = ({ rows, loading, error, refetch, onEdit }: Props
     if (!p) return;
     navigator.clipboard?.writeText(p);
     toast.success("Phone copied");
+  };
+
+  const openBoltLink = (c: Customer) => {
+    const url = (c.bolt_url ?? "").trim();
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    toast.warning("Please add Bolt URL first.");
+    onEdit(c, { tab: "notes", focusBoltUrl: true });
   };
 
   const markContacted = async (c: Customer) => {
@@ -297,11 +307,22 @@ export const ContactListView = ({ rows, loading, error, refetch, onEdit }: Props
                 </div>
 
                 {/* Primary actions */}
-                <div className="grid grid-cols-2 gap-2">
-                  <Button asChild size="sm" className="gradient-brand" disabled={noPhone}>
-                    <a href={telLink(c.phone_number)}>
-                      <Phone className="w-3 h-3 mr-1" /> Call
-                    </a>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    size="sm"
+                    className="bg-brand text-brand-foreground hover:bg-brand/90"
+                    onClick={() => onEdit(c)}
+                    title="Edit customer"
+                  >
+                    <Pencil className="w-3 h-3 mr-1" /> Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openBoltLink(c)}
+                    title="Open Bolt application link"
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" /> Bolt Link
                   </Button>
                   <Button asChild size="sm" variant="outline" disabled={noPhone}>
                     <a href={waLink(c.phone_number)} target="_blank" rel="noreferrer">
