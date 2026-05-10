@@ -47,6 +47,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Defer Supabase calls
         setTimeout(async () => {
           const p = await fetchProfile(newSession.user.id);
+          if (p?.account_locked === true) {
+            await supabase.auth.signOut();
+            setProfile(null);
+            setSession(null);
+            setUser(null);
+            try {
+              localStorage.clear();
+              sessionStorage.clear();
+            } catch {
+              /* noop */
+            }
+            if (typeof window !== "undefined" && window.location.pathname !== "/staff-login") {
+              window.location.replace(
+                "/staff-login?locked=1",
+              );
+            }
+            return;
+          }
           setProfile(p);
         }, 0);
       }
@@ -58,7 +76,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(existing?.user ?? null);
       if (existing?.user) {
         const p = await fetchProfile(existing.user.id);
-        setProfile(p);
+        if (p?.account_locked === true) {
+          await supabase.auth.signOut();
+          setProfile(null);
+          setSession(null);
+          setUser(null);
+          try {
+            localStorage.clear();
+            sessionStorage.clear();
+          } catch {
+            /* noop */
+          }
+          if (typeof window !== "undefined" && window.location.pathname !== "/staff-login") {
+            window.location.replace("/staff-login?locked=1");
+          }
+        } else {
+          setProfile(p);
+        }
       }
       setLoading(false);
     });
