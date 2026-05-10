@@ -23,6 +23,7 @@ export interface StaffProfile {
   profile_photo_url?: string | null;
   avatar_color?: string | null;
   first_login_completed?: boolean | null;
+  account_locked?: boolean | null;
 }
 
 export const ROLE_TO_PATH: Record<StaffRole, string> = {

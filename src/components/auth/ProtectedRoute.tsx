@@ -28,6 +28,10 @@ export const ProtectedRoute = ({ role, children }: Props) => {
     return <Navigate to="/staff-login" replace />;
   }
 
+  if (profile.account_locked === true) {
+    return <Navigate to="/staff-login?locked=1" replace />;
+  }
+
   if (profile.role !== role) {
     return <Navigate to={ROLE_TO_PATH[profile.role]} replace />;
   }
