@@ -49,13 +49,13 @@ const today = () => new Date().toISOString().slice(0, 10);
 const customerRouteFor = (role?: string | null) => {
   switch (role) {
     case "boss":
-      return "/boss/customers";
+      return "/boss/all-customers";
     case "admin":
-      return "/admin/customers";
+      return "/admin/all-customers";
     case "it_tech":
-      return "/it-tech/reassignment";
+      return "/it-tech/all-customers";
     case "super_admin":
-      return "/super-admin";
+      return "/super-admin/all-customers";
     default:
       return "/";
   }
@@ -222,7 +222,7 @@ export const useNotifications = () => {
             title: isWalk ? "Walk-in customer created" : "New customer registered",
             description: `${c.full_name ?? "Unnamed"} · ${c.applicant_id ?? "—"}`,
             timestamp: c.created_at,
-            to: cRoute,
+            to: `${cRoute}?customer=${c.id}`,
             unread: true,
           });
         }
@@ -236,7 +236,7 @@ export const useNotifications = () => {
             title: "Customer assigned to you",
             description: `${c.full_name ?? "Unnamed"} · ${c.applicant_id ?? "—"}`,
             timestamp: c.updated_at,
-            to: cRoute,
+            to: `${role === "admin" ? "/admin/my-customers" : cRoute}?customer=${c.id}`,
             unread: true,
           });
         }
@@ -251,7 +251,7 @@ export const useNotifications = () => {
             title: overdue ? "Follow-up overdue" : "Follow-up due today",
             description: `${c.full_name ?? "Unnamed"} · ${c.applicant_id ?? "—"} · ${c.next_follow_up_date}`,
             timestamp: c.next_follow_up_date,
-            to: cRoute,
+            to: `${cRoute}?customer=${c.id}`,
             unread: true,
           });
         }
@@ -265,7 +265,7 @@ export const useNotifications = () => {
             title: `High priority: ${c.priority_status}`,
             description: `${c.full_name ?? "Unnamed"} · ${c.applicant_id ?? "—"}`,
             timestamp: c.updated_at,
-            to: cRoute,
+            to: `${cRoute}?customer=${c.id}`,
             unread: true,
           });
         }

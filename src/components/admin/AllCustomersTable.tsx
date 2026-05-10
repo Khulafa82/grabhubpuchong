@@ -27,12 +27,13 @@ interface Props {
   myId: string | null;
   onEdit: (c: Customer) => void;
   refetch: () => void;
+  initialCustomerId?: string | null;
 }
 
 const PAGE_SIZE = 25;
 
 export const AllCustomersTable = ({
-  rows, loading, error, myId, refetch,
+  rows, loading, error, myId, refetch, initialCustomerId,
 }: Props) => {
   const [search, setSearch] = useState("");
   const [phone, setPhone] = useState("");
@@ -47,6 +48,15 @@ export const AllCustomersTable = ({
   const [quickRange, setQuickRange] = useState<QuickDateRange>("all");
   const [page, setPage] = useState(1);
   const [details, setDetails] = useState<Customer | null>(null);
+  const [autoOpened, setAutoOpened] = useState<string | null>(null);
+
+  if (initialCustomerId && initialCustomerId !== autoOpened && !details) {
+    const match = rows.find((r) => r.id === initialCustomerId);
+    if (match) {
+      setDetails(match);
+      setAutoOpened(initialCustomerId);
+    }
+  }
 
   const services = useMemo(
     () => Array.from(new Set(rows.map((r) => r.user_role).filter(Boolean))) as string[],
