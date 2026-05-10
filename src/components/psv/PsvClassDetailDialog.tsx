@@ -49,15 +49,30 @@ export const PsvClassDetailDialog = ({
   const [busy, setBusy] = useState(false);
   const [attFilter, setAttFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
+  const [confirmRemove, setConfirmRemove] = useState<null | { id: string; customer_id: string; name: string }>(null);
+  const [removing, setRemoving] = useState(false);
 
   useEffect(() => {
     setCurrentClass(psvClass);
   }, [psvClass]);
 
-  const existingCustomerIds = useMemo(() => new Set(data.map((d) => d.customer_id)), [data]);
+  // Reset optimistic removals whenever the class changes or the modal reopens.
+  useEffect(() => {
+    setRemovedIds(new Set());
+  }, [psvClass?.id, open]);
+
+  const visibleAssignments = useMemo(
+    () => data.filter((r) => !removedIds.has(r.id)),
+    [data, removedIds],
+  );
+  const existingCustomerIds = useMemo(
+    () => new Set(visibleAssignments.map((d) => d.customer_id)),
+    [visibleAssignments],
+  );
   const filteredAssignments = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return data.filter((r) => {
+    return visibleAssignments.filter((r) => {
       if (attFilter !== "all" && (r.attendance_status ?? "Pending") !== attFilter) return false;
       if (q) {
         const hay = `${r.customer?.full_name ?? ""} ${r.customer?.phone_number ?? ""} ${r.admin_name ?? ""}`.toLowerCase();
@@ -65,7 +80,7 @@ export const PsvClassDetailDialog = ({
       }
       return true;
     });
-  }, [data, attFilter, search]);
+  }, [visibleAssignments, attFilter, search]);
 
   if (!currentClass) return null;
 
@@ -73,11 +88,12 @@ export const PsvClassDetailDialog = ({
 
   const state = classCapacityState(selectedClass);
   const cap = selectedClass.capacity ?? 0;
-  const booked = selectedClass.booked_count ?? 0;
-  const available = selectedClass.available_slots ?? Math.max(cap - booked, 0);
-  const attended = data.filter((d) => d.attendance_status === "Attended").length;
-  const absent = data.filter((d) => d.attendance_status === "Absent").length;
-  const pending = data.filter((d) => !d.attendance_status || d.attendance_status === "Pending").length;
+  const bookedRaw = selectedClass.booked_count ?? 0;
+  const booked = Math.max(bookedRaw - removedIds.size, 0);
+  const available = cap > 0 ? Math.max(cap - booked, 0) : 0;
+  const attended = visibleAssignments.filter((d) => d.attendance_status === "Attended").length;
+  const absent = visibleAssignments.filter((d) => d.attendance_status === "Absent").length;
+  const pending = visibleAssignments.filter((d) => !d.attendance_status || d.attendance_status === "Pending").length;
   const dateStr = selectedClass.class_date
     ? new Date(selectedClass.class_date).toLocaleDateString(undefined, {
         weekday: "long",
@@ -120,6 +136,53 @@ export const PsvClassDetailDialog = ({
         status: derivePsvClassStatus(cap, newBooked, selectedClass.status),
       })
       .eq("id", selectedClass.id);
+  };
+
+  const removeAssignment = async (row: { id: string; customer_id: string }) => {
+    setRemoving(true);
+    // Optimistic UI update first.
+    setRemovedIds((prev) => {
+      const next = new Set(prev);
+      next.add(row.id);
+      return next;
+    });
+    const { error: delErr } = await supabase
+      .from("psv_class_customers")
+      .delete()
+      .eq("class_id", selectedClass.id)
+      .eq("customer_id", row.customer_id);
+    if (delErr) {
+      // Roll back optimistic removal.
+      setRemovedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(row.id);
+        return next;
+      });
+      setRemoving(false);
+      toast.error(delErr.message);
+      return;
+    }
+    const { error: custErr } = await supabase
+      .from("customers")
+      .update({
+        psv_class_id: null,
+        psv_class: null,
+        psv_class_date: null,
+        psv_class_location: null,
+      })
+      .eq("id", row.customer_id);
+    if (custErr) {
+      setRemoving(false);
+      toast.error(custErr.message);
+      return;
+    }
+    await releaseSlot();
+    await refreshClassAndAssignments();
+    // Clear optimistic set — refetched data now excludes the row.
+    setRemovedIds(new Set());
+    setRemoving(false);
+    setConfirmRemove(null);
+    toast.success("Customer removed from class");
   };
 
   const markAttendance = async (
@@ -228,7 +291,7 @@ export const PsvClassDetailDialog = ({
           )}
 
           <div className="flex items-center justify-between mt-4 mb-2">
-            <h4 className="font-semibold text-charcoal">Assigned customers ({data.length})</h4>
+            <h4 className="font-semibold text-charcoal">Assigned customers ({visibleAssignments.length})</h4>
             {canShowAssignButton && (
               <Button
                 size="sm"
@@ -337,26 +400,13 @@ export const PsvClassDetailDialog = ({
                           size="sm"
                           variant="ghost"
                           className="text-destructive hover:text-destructive"
-                          onClick={async () => {
-                            const { error: err } = await supabase
-                              .from("psv_class_customers")
-                              .delete()
-                              .eq("id", row.id);
-                            if (err) return toast.error(err.message);
-                            // Clear the customer's mirrored class info and free a slot.
-                            await supabase
-                              .from("customers")
-                              .update({
-                                psv_class_id: null,
-                                psv_class: null,
-                                psv_class_date: null,
-                                psv_class_location: null,
-                              })
-                              .eq("id", row.customer_id);
-                            await releaseSlot();
-                            toast.success("Removed from class");
-                            refreshClassAndAssignments();
-                          }}
+                          onClick={() =>
+                            setConfirmRemove({
+                              id: row.id,
+                              customer_id: row.customer_id,
+                              name: row.customer?.full_name ?? "this customer",
+                            })
+                          }
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -393,6 +443,34 @@ export const PsvClassDetailDialog = ({
             <AlertDialogAction onClick={deleteClass} disabled={busy} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {busy && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!confirmRemove}
+        onOpenChange={(o) => !o && !removing && setConfirmRemove(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this customer from this PSV class?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmRemove?.name} will be unassigned and the slot will be released.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removing}>Keep</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={removing}
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmRemove) removeAssignment(confirmRemove);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {removing && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+              Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
