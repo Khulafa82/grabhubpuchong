@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Calendar, Clock, MapPin, Users, GraduationCap, UserPlus, Phone, Pencil, Trash2, Ban, Check, X, RotateCcw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
@@ -44,23 +44,30 @@ export const PsvClassDetailDialog = ({
   psvClass, open, onOpenChange, role, myId, onChanged, canEdit, canDelete, onEdit,
 }: Props) => {
   const { data, loading, error, refetch } = usePsvAssignments(open ? psvClass?.id : null);
+  const [currentClass, setCurrentClass] = useState<PsvClass | null>(psvClass);
   const [assignOpen, setAssignOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [attFilter, setAttFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
 
-  if (!psvClass) return null;
+  useEffect(() => {
+    setCurrentClass(psvClass);
+  }, [psvClass]);
 
-  const state = classCapacityState(psvClass);
-  const cap = psvClass.capacity ?? 0;
-  const booked = psvClass.booked_count ?? 0;
-  const available = psvClass.available_slots ?? Math.max(cap - booked, 0);
+  if (!currentClass) return null;
+
+  const selectedClass = currentClass;
+
+  const state = classCapacityState(selectedClass);
+  const cap = selectedClass.capacity ?? 0;
+  const booked = selectedClass.booked_count ?? 0;
+  const available = selectedClass.available_slots ?? Math.max(cap - booked, 0);
   const attended = data.filter((d) => d.attendance_status === "Attended").length;
   const absent = data.filter((d) => d.attendance_status === "Absent").length;
   const pending = data.filter((d) => !d.attendance_status || d.attendance_status === "Pending").length;
   const dateStr = psvClass.class_date
-    ? new Date(psvClass.class_date).toLocaleDateString(undefined, {
+    ? new Date(selectedClass.class_date).toLocaleDateString(undefined, {
         weekday: "long",
         day: "2-digit",
         month: "long",
