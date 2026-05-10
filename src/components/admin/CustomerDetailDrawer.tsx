@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
@@ -31,6 +31,10 @@ interface Props {
   /** True only when current auth.uid() === customer.admin_in_charge */
   editable: boolean;
   onSaved: () => void;
+  /** Optional initial tab to open the drawer on. Defaults to "overview". */
+  initialTab?: "overview" | "personal" | "application" | "vehicle" | "notes";
+  /** When true, focus and highlight the Bolt URL input after the drawer opens. */
+  focusBoltUrl?: boolean;
 }
 
 const SectionCard = ({
@@ -245,10 +249,28 @@ const PSV_LICENSE_OPTIONS = [
 const INSURANCE_STATUS_OPTIONS = ["active", "expired", "pending", "none"];
 
 export const CustomerDetailDrawer = ({
-  customer, open, onOpenChange, editable, onSaved,
+  customer, open, onOpenChange, editable, onSaved, initialTab, focusBoltUrl,
 }: Props) => {
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>(initialTab ?? "overview");
+  const boltUrlRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (open) setActiveTab(initialTab ?? "overview");
+  }, [open, initialTab, customer?.id]);
+
+  useEffect(() => {
+    if (!open || !focusBoltUrl) return;
+    const t = setTimeout(() => {
+      const el = boltUrlRef.current;
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [open, focusBoltUrl, activeTab]);
 
   useEffect(() => {
     if (customer) {
