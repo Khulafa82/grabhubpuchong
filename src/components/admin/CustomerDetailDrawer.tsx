@@ -203,7 +203,15 @@ const toForm = (c: Customer): FormState => ({
 });
 
 const USER_ROLE_OPTIONS = ["GrabCar", "GrabFood"];
-const ACCOUNT_STATUS_OPTIONS = ["new", "active", "suspended", "closed"];
+
+const ACCOUNT_STATUS_OPTIONS_GRABCAR = [
+  { label: "New", value: "new" },
+  { label: "Reactivation", value: "reactivation" },
+];
+const ACCOUNT_STATUS_OPTIONS_GRABFOOD = [
+  { label: "New", value: "new" },
+];
+
 const ELIGIBILITY_OPTIONS = [
   { label: "Eligible", value: "eligible" },
   { label: "Rejected", value: "rejected" },
