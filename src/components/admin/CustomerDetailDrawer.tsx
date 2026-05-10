@@ -297,8 +297,6 @@ export const CustomerDetailDrawer = ({
       account_status: form.account_status || null,
       blue_ic_status: form.blue_ic_status,
       license_type: form.license_type || null,
-      criminal_record_status: form.criminal_record_status || null,
-      eligibility_status: form.eligibility_status || null,
       psv_license_status: form.psv_license_status || null,
       has_car: form.has_car,
       car_model: form.car_model || null,
@@ -578,9 +576,9 @@ export const CustomerDetailDrawer = ({
                 />
                 <LabeledSelect
                   label="Eligibility status"
-                  editable={editable}
+                  editable={false}
                   value={form.eligibility_status}
-                  onChange={(v) => set("eligibility_status", v)}
+                  onChange={() => {}}
                   options={ELIGIBILITY_OPTIONS}
                 />
                 <EFBool
@@ -599,9 +597,9 @@ export const CustomerDetailDrawer = ({
                 />
                 <LabeledSelect
                   label="Criminal record"
-                  editable={editable}
+                  editable={false}
                   value={form.criminal_record_status}
-                  onChange={(v) => set("criminal_record_status", v)}
+                  onChange={() => {}}
                   options={CRIMINAL_RECORD_OPTIONS}
                 />
               </SectionCard>
