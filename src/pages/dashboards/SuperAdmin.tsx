@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, ShieldCheck, Eye, Shuffle, BarChart3, Server,
   Calendar, ScrollText, Lock, Sliders, Settings, AlertTriangle, Loader2, CalendarCheck,
@@ -11,12 +11,13 @@ import { useDashboardStats } from "@/hooks/useDashboardStats";
 import BiodataSettings from "@/components/dashboard/BiodataSettings";
 import LeaveManagement from "./super/LeaveManagement";
 import { PsvCalendarPage } from "@/components/psv/PsvCalendarPage";
+import BossCustomers from "./boss/CustomersList";
 
 const items = [
   { label: "Dashboard Overview", to: "/super-admin", icon: LayoutDashboard },
   { label: "User Management", to: "/super-admin/users", icon: Users },
   { label: "Role & Access", to: "/super-admin/roles", icon: ShieldCheck },
-  { label: "Customer Oversight", to: "/super-admin/customers", icon: Eye },
+  { label: "Customer Oversight", to: "/super-admin/all-customers", icon: Eye },
   { label: "Assignment Center", to: "/super-admin/assignments", icon: Shuffle },
   { label: "Boss Analytics", to: "/super-admin/analytics", icon: BarChart3 },
   { label: "IT Operations", to: "/super-admin/it", icon: Server },
@@ -91,7 +92,8 @@ const SuperAdmin = () => (
       <Route index element={<Overview />} />
       <Route path="users" element={<PagePlaceholder title="User Management" />} />
       <Route path="roles" element={<PagePlaceholder title="Role & Access Control" />} />
-      <Route path="customers" element={<PagePlaceholder title="Customer Oversight" />} />
+      <Route path="all-customers" element={<BossCustomers title="Customer oversight" description="Full system oversight · all customer records across the operation." />} />
+      <Route path="customers" element={<Navigate to="/super-admin/all-customers" replace />} />
       <Route path="assignments" element={<PagePlaceholder title="Assignment Control Center" />} />
       <Route path="analytics" element={<PagePlaceholder title="Boss Analytics View" />} />
       <Route path="it" element={<PagePlaceholder title="IT Operations View" />} />

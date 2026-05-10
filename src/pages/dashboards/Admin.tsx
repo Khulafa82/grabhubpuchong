@@ -1,4 +1,4 @@
-import { Routes, Route, NavLink as RouterNavLink } from "react-router-dom";
+import { Routes, Route, NavLink as RouterNavLink, Navigate, useSearchParams } from "react-router-dom";
 import {
   LayoutDashboard, Users, UserCheck, Phone, CalendarOff, Calendar, Settings,
   Clock, MessageCircle, AlertCircle, CheckCircle2, Loader2, CalendarClock, ClipboardList,
@@ -156,6 +156,8 @@ const MyCustomersPage = () => {
   const myId = useMyId();
   const { data, loading, error, refetch } = useCustomers({ adminId: myId, scope: "mine" });
   const [, setActive] = useState<Customer | null>(null);
+  const [searchParams] = useSearchParams();
+  const initialCustomerId = searchParams.get("customer");
 
   const stats = useMemo(() => {
     const today = data.filter((c) => isToday(c.next_follow_up_date)).length;
@@ -195,6 +197,7 @@ const MyCustomersPage = () => {
         error={error}
         onEdit={setActive}
         refetch={refetch}
+        initialCustomerId={initialCustomerId}
       />
     </div>
   );
@@ -205,6 +208,8 @@ const AllCustomersPage = () => {
   const { data, loading, error, refetch } = useCustomers({ scope: "all" });
   const [, setActive] = useState<Customer | null>(null);
   const mineCount = useMemo(() => data.filter((c) => c.admin_in_charge === myId).length, [data, myId]);
+  const [searchParams] = useSearchParams();
+  const initialCustomerId = searchParams.get("customer");
 
   return (
     <div className="space-y-6">
@@ -224,6 +229,7 @@ const AllCustomersPage = () => {
         myId={myId}
         onEdit={setActive}
         refetch={refetch}
+        initialCustomerId={initialCustomerId}
       />
     </div>
   );
@@ -269,6 +275,7 @@ const Admin = () => (
       <Route index element={<Overview />} />
       <Route path="all-customers" element={<AllCustomersPage />} />
       <Route path="my-customers" element={<MyCustomersPage />} />
+      <Route path="customers" element={<Navigate to="/admin/all-customers" replace />} />
       <Route path="contacts" element={<ContactsPage />} />
       <Route path="leave" element={<LeaveApplication />} />
       <Route path="psv-calendar" element={<PsvCalendarPage role="admin" />} />

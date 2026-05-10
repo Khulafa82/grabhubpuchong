@@ -1,4 +1,4 @@
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, Navigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, UserCog, Activity, Shuffle, ClipboardCheck, Copy, ScrollText,
@@ -14,6 +14,7 @@ import Duplicates from "./it/Duplicates";
 import Audit from "./it/Audit";
 import TechSettings from "./it/TechSettings";
 import ItSettings from "./it/Settings";
+import BossCustomers from "./boss/CustomersList";
 import { Card } from "@/components/ui/card";
 import { PsvCalendarPage } from "@/components/psv/PsvCalendarPage";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ import { useAuth } from "@/context/AuthContext";
 const items = [
   { label: "Dashboard Overview", to: "/it-tech", icon: LayoutDashboard },
   { label: "Staff Account Mgmt", to: "/it-tech/accounts", icon: UserCog },
+  { label: "All Customer Data", to: "/it-tech/all-customers", icon: Users },
   { label: "Admin State", to: "/it-tech/state", icon: Activity },
   { label: "Reassignment", to: "/it-tech/reassignment", icon: Shuffle },
   { label: "Leave Handover", to: "/it-tech/handover", icon: ClipboardCheck },
@@ -548,6 +550,8 @@ const ITTech = () => (
     <Route element={<DashboardLayout role="it" roleLabel="IT Technician" items={items} />}>
       <Route index element={<Overview />} />
       <Route path="accounts" element={<StaffAccounts />} />
+      <Route path="all-customers" element={<BossCustomers title="All customer data" description="Technical oversight · full read access across all customer records." />} />
+      <Route path="customers" element={<Navigate to="/it-tech/all-customers" replace />} />
       <Route path="state" element={<AdminState />} />
       <Route path="reassignment" element={<Reassignment />} />
       <Route path="handover" element={<Handover />} />
