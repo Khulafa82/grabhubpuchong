@@ -161,7 +161,7 @@ export const PsvClassDetailDialog = ({
   const cancelClass = async () => {
     setBusy(true);
     const { error: err } = await supabase
-      .from("psv_classes").update({ status: "Cancelled" }).eq("id", psvClass.id);
+      .from("psv_classes").update({ status: "Cancelled" }).eq("id", selectedClass.id);
     setBusy(false);
     if (err) return toast.error(err.message);
     toast.success("Class cancelled");
@@ -170,7 +170,7 @@ export const PsvClassDetailDialog = ({
 
   const deleteClass = async () => {
     setBusy(true);
-    const { error: err } = await supabase.from("psv_classes").delete().eq("id", psvClass.id);
+    const { error: err } = await supabase.from("psv_classes").delete().eq("id", selectedClass.id);
     setBusy(false);
     if (err) return toast.error(err.message);
     toast.success("Class deleted");
@@ -186,13 +186,13 @@ export const PsvClassDetailDialog = ({
           <DialogHeader>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <DialogTitle className="text-xl">{psvClass.title ?? "Untitled class"}</DialogTitle>
+                <DialogTitle className="text-xl">{selectedClass.title ?? "Untitled class"}</DialogTitle>
                 <DialogDescription>PSV class details and attendance.</DialogDescription>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className={classBadgeClass(state)}>{state}</Badge>
                 {canEdit && (
-                  <Button size="sm" variant="outline" onClick={() => onEdit?.(psvClass)}>
+                  <Button size="sm" variant="outline" onClick={() => onEdit?.(selectedClass)}>
                     <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
                   </Button>
                 )}
