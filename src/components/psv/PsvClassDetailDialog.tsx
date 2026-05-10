@@ -55,6 +55,8 @@ export const PsvClassDetailDialog = ({
     setCurrentClass(psvClass);
   }, [psvClass]);
 
+  const existingCustomerIds = useMemo(() => new Set(data.map((d) => d.customer_id)), [data]);
+
   if (!currentClass) return null;
 
   const selectedClass = currentClass;
@@ -66,7 +68,7 @@ export const PsvClassDetailDialog = ({
   const attended = data.filter((d) => d.attendance_status === "Attended").length;
   const absent = data.filter((d) => d.attendance_status === "Absent").length;
   const pending = data.filter((d) => !d.attendance_status || d.attendance_status === "Pending").length;
-  const dateStr = psvClass.class_date
+  const dateStr = selectedClass.class_date
     ? new Date(selectedClass.class_date).toLocaleDateString(undefined, {
         weekday: "long",
         day: "2-digit",
@@ -75,10 +77,9 @@ export const PsvClassDetailDialog = ({
       })
     : "—";
 
-  const canAssign = role === "admin" || role === "super_admin";
   const canEditAttendance = role === "admin" || role === "it_tech" || role === "super_admin";
   const isCapacityFull = cap > 0 && booked >= cap;
-  const canShowAssignButton = canAssign && state !== "Cancelled" && state !== "Completed";
+  const canShowAssignButton = state !== "Cancelled";
 
   const refreshAll = () => {
     refetch();
@@ -374,11 +375,11 @@ export const PsvClassDetailDialog = ({
       <AssignCustomerDialog
         open={assignOpen}
         onOpenChange={setAssignOpen}
-        psvClass={psvClass}
+        psvClass={selectedClass}
         myId={myId}
         role={role}
-        existingCustomerIds={useMemo(() => new Set(data.map((d) => d.customer_id)), [data])}
-        onAssigned={refreshAll}
+        existingCustomerIds={existingCustomerIds}
+        onAssigned={refreshClassAndAssignments}
       />
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
