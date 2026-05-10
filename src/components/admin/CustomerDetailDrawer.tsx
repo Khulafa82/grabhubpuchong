@@ -42,6 +42,43 @@ const SectionCard = ({
   </Card>
 );
 
+/** Select that supports distinct label/value pairs (used for backend-validated enums). */
+const LabeledSelect = ({
+  label, value, onChange, editable, options, placeholder,
+}: {
+  label: string;
+  value: string | null | undefined;
+  onChange: (v: string) => void;
+  editable: boolean;
+  options: { label: string; value: string }[];
+  placeholder?: string;
+}) => {
+  const current = options.find((o) => o.value === (value ?? ""));
+  return (
+    <div className="min-w-0 space-y-1">
+      <Label className="text-[11px] uppercase tracking-wide text-muted-foreground font-normal">
+        {label}
+      </Label>
+      {editable ? (
+        <Select value={value ?? ""} onValueChange={onChange}>
+          <SelectTrigger className="h-9">
+            <SelectValue placeholder={placeholder ?? "Select..."} />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : (
+        <div className="mt-0.5 text-sm text-charcoal break-words">
+          {current?.label ?? (value ? value : "—")}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* All editable string-ish keys in public.customers we expose to admins */
 type FormState = {
   full_name: string;
@@ -85,6 +122,44 @@ type FormState = {
   duplicate_reason: string;
 };
 
+/** Normalize legacy license_type values stored in DB to current backend-accepted values. */
+const normalizeLicenseType = (v: string | null | undefined): string => {
+  const s = (v ?? "").trim();
+  if (!s) return "";
+  if (s === "B2" || s === "B" || /^B\s*Full$/i.test(s) || /B2\s*\/\s*B\s*Full/i.test(s))
+    return "Full License B2 / B Full";
+  if (s === "D" || /^Full\s*License\s*D$/i.test(s)) return "Full License D";
+  if (s === "P" || /^License\s*P$/i.test(s)) return "License P";
+  return s;
+};
+
+/** Normalize legacy psv_license_status values. */
+const normalizePsvLicense = (v: string | null | undefined): string => {
+  const s = (v ?? "").trim().toLowerCase();
+  if (!s) return "";
+  if (s === "have" || s === "have_psv") return "have_psv";
+  if (s === "dont_have" || s === "no_psv" || s === "in_progress" || s === "expired") return "no_psv";
+  return v ?? "";
+};
+
+/** Normalize legacy criminal_record_status values. */
+const normalizeCriminal = (v: string | null | undefined): string => {
+  const s = (v ?? "").trim().toLowerCase();
+  if (!s) return "";
+  if (s === "clean" || s === "minor" || s === "pending_check") return "clean";
+  if (s === "has_record" || s === "major") return "has_record";
+  return v ?? "";
+};
+
+/** Normalize legacy eligibility_status values. */
+const normalizeEligibility = (v: string | null | undefined): string => {
+  const s = (v ?? "").trim().toLowerCase();
+  if (!s) return "";
+  if (s === "eligible") return "eligible";
+  if (s === "rejected" || s === "not_eligible") return "rejected";
+  return v ?? "";
+};
+
 const toForm = (c: Customer): FormState => ({
   full_name: c.full_name ?? "",
   ic_number: c.ic_number ?? "",
@@ -95,10 +170,10 @@ const toForm = (c: Customer): FormState => ({
   state: c.state ?? "",
   account_status: c.account_status ?? "",
   blue_ic_status: c.blue_ic_status ?? null,
-  license_type: c.license_type ?? "",
-  criminal_record_status: c.criminal_record_status ?? "",
-  eligibility_status: c.eligibility_status ?? "",
-  psv_license_status: c.psv_license_status ?? "",
+  license_type: normalizeLicenseType(c.license_type),
+  criminal_record_status: normalizeCriminal(c.criminal_record_status),
+  eligibility_status: normalizeEligibility(c.eligibility_status),
+  psv_license_status: normalizePsvLicense(c.psv_license_status),
   has_car: c.has_car ?? null,
   car_model: c.car_model ?? "",
   car_year: c.car_year != null ? String(c.car_year) : "",
@@ -129,10 +204,25 @@ const toForm = (c: Customer): FormState => ({
 
 const USER_ROLE_OPTIONS = ["GrabCar", "GrabFood", "GrabExpress", "Bolt"];
 const ACCOUNT_STATUS_OPTIONS = ["new", "active", "suspended", "closed"];
-const ELIGIBILITY_OPTIONS = ["eligible", "not_eligible", "pending_review"];
-const LICENSE_TYPE_OPTIONS = ["B", "B2", "D", "DA", "E", "E1", "E2", "GDL"];
-const CRIMINAL_RECORD_OPTIONS = ["clean", "minor", "major", "pending_check"];
-const PSV_LICENSE_OPTIONS = ["have", "dont_have", "in_progress", "expired"];
+const ELIGIBILITY_OPTIONS = [
+  { label: "Eligible", value: "eligible" },
+  { label: "Rejected", value: "rejected" },
+];
+const LICENSE_OPTIONS_GRABCAR = [
+  { label: "Full License D", value: "Full License D" },
+];
+const LICENSE_OPTIONS_GRABFOOD = [
+  { label: "Full License B2 / B Full", value: "Full License B2 / B Full" },
+  { label: "License P", value: "License P" },
+];
+const CRIMINAL_RECORD_OPTIONS = [
+  { label: "Clean / No Record", value: "clean" },
+  { label: "Has Record", value: "has_record" },
+];
+const PSV_LICENSE_OPTIONS = [
+  { label: "Have PSV", value: "have_psv" },
+  { label: "No PSV", value: "no_psv" },
+];
 const INSURANCE_STATUS_OPTIONS = ["active", "expired", "pending", "none"];
 
 export const CustomerDetailDrawer = ({
@@ -462,7 +552,7 @@ export const CustomerDetailDrawer = ({
                   onChange={(v) => set("account_status", v)}
                   options={ACCOUNT_STATUS_OPTIONS}
                 />
-                <EFSelect
+                <LabeledSelect
                   label="Eligibility status"
                   editable={editable}
                   value={form.eligibility_status}
@@ -475,14 +565,15 @@ export const CustomerDetailDrawer = ({
                   value={form.blue_ic_status}
                   onChange={(v) => set("blue_ic_status", v)}
                 />
-                <EFSelect
+                <LabeledSelect
                   label="License type"
                   editable={editable}
                   value={form.license_type}
                   onChange={(v) => set("license_type", v)}
-                  options={LICENSE_TYPE_OPTIONS}
+                  options={isGrabCar ? LICENSE_OPTIONS_GRABCAR : isGrabFood ? LICENSE_OPTIONS_GRABFOOD : [...LICENSE_OPTIONS_GRABCAR, ...LICENSE_OPTIONS_GRABFOOD]}
+                  placeholder={!form.user_role ? "Select service first" : "Select license"}
                 />
-                <EFSelect
+                <LabeledSelect
                   label="Criminal record"
                   editable={editable}
                   value={form.criminal_record_status}
@@ -496,7 +587,7 @@ export const CustomerDetailDrawer = ({
             <TabsContent value="vehicle" className="space-y-4">
               {(isGrabCar || (!isGrabFood && (form.has_car || form.car_model))) && (
                 <SectionCard title="GrabCar / Vehicle / PSV">
-                  <EFSelect
+                  <LabeledSelect
                     label="PSV license"
                     editable={editable}
                     value={form.psv_license_status}
