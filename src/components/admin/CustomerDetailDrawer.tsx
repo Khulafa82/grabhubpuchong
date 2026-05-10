@@ -553,12 +553,12 @@ export const CustomerDetailDrawer = ({
                   onChange={(v) => set("user_role", v)}
                   options={USER_ROLE_OPTIONS}
                 />
-                <EFSelect
+                <LabeledSelect
                   label="Account status"
                   editable={editable}
                   value={form.account_status}
                   onChange={(v) => set("account_status", v)}
-                  options={ACCOUNT_STATUS_OPTIONS}
+                  options={isGrabCar ? ACCOUNT_STATUS_OPTIONS_GRABCAR : ACCOUNT_STATUS_OPTIONS_GRABFOOD}
                 />
                 <LabeledSelect
                   label="Eligibility status"
