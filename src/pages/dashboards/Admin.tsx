@@ -240,6 +240,8 @@ const ContactsPage = () => {
   const myId = useMyId();
   const { data, loading, error, refetch } = useCustomers({ adminId: myId, scope: "mine" });
   const [active, setActive] = useState<Customer | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "personal" | "application" | "vehicle" | "notes">("overview");
+  const [focusBolt, setFocusBolt] = useState(false);
 
   return (
     <div className="space-y-6">
