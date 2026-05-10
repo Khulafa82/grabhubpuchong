@@ -561,7 +561,12 @@ export const CustomerDetailDrawer = ({
                   label="Service / user role"
                   editable={editable}
                   value={form.user_role}
-                  onChange={(v) => set("user_role", v)}
+                  onChange={(v) => {
+                    set("user_role", v);
+                    if (v.toLowerCase() === "grabfood" && form.account_status === "reactivation") {
+                      set("account_status", "new");
+                    }
+                  }}
                   options={USER_ROLE_OPTIONS}
                 />
                 <LabeledSelect
