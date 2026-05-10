@@ -16,6 +16,8 @@ interface Eligible {
   applicant_id: string | null;
   customer_status: string | null;
   admin_in_charge: string | null;
+  psv_license_status: string | null;
+  admin_name?: string | null;
 }
 
 // Eligible = GrabCar customers without a PSV license, not yet assigned to any class.
@@ -52,9 +54,9 @@ export const AssignCustomerDialog = ({
       setLoading(true);
       let q = supabase
         .from("customers")
-        .select("id, full_name, phone_number, applicant_id, customer_status, admin_in_charge")
+        .select("id, full_name, phone_number, applicant_id, customer_status, admin_in_charge, psv_license_status")
         .eq("user_role", "GrabCar")
-        .eq("psv_license_status", "no_psv")
+        .or("psv_license_status.is.null,psv_license_status.eq.no_psv")
         .is("psv_class_id", null)
         .in("customer_status", ELIGIBLE_STATUSES)
         .order("updated_at", { ascending: false, nullsFirst: false });
@@ -66,7 +68,22 @@ export const AssignCustomerDialog = ({
         toast.error(error.message);
         setRows([]);
       } else {
-        setRows((data ?? []) as Eligible[]);
+        const list = (data ?? []) as Eligible[];
+        const adminIds = Array.from(
+          new Set(list.map((r) => r.admin_in_charge).filter(Boolean) as string[]),
+        );
+        if (adminIds.length) {
+          const { data: admins } = await supabase
+            .from("staff_profiles")
+            .select("id, full_name")
+            .in("id", adminIds);
+          const map = new Map<string, string | null>();
+          (admins ?? []).forEach((a: any) => map.set(a.id, a.full_name ?? null));
+          list.forEach((r) => {
+            r.admin_name = r.admin_in_charge ? map.get(r.admin_in_charge) ?? null : null;
+          });
+        }
+        setRows(list);
       }
       setLoading(false);
     })();
@@ -150,7 +167,7 @@ export const AssignCustomerDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Assign customer to class</DialogTitle>
+          <DialogTitle>Assign Customer to PSV Class</DialogTitle>
           <DialogDescription>
             {psvClass.title ?? "PSV class"} · {available} slot{available === 1 ? "" : "s"} available
           </DialogDescription>
@@ -158,7 +175,7 @@ export const AssignCustomerDialog = ({
 
         {isFull && (
           <div className="p-3 rounded border border-destructive/40 bg-destructive/5 text-sm text-destructive">
-            This class is {state.toLowerCase()}. New assignments are blocked.
+            Class is full. New assignments are blocked.
           </div>
         )}
 
@@ -189,10 +206,18 @@ export const AssignCustomerDialog = ({
                   <div className="text-xs text-muted-foreground truncate">
                     {c.applicant_id ?? "—"} · {c.phone_number ?? "—"}
                   </div>
+                  <div className="text-xs text-muted-foreground truncate mt-0.5">
+                    Admin: {c.admin_name ?? "—"} · PSV: {c.psv_license_status ?? "no_psv"}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge variant="outline">{c.customer_status ?? "—"}</Badge>
-                  <Button size="sm" disabled={isFull || busyId === c.id} onClick={() => assign(c)}>
+                  <Button
+                    size="sm"
+                    disabled={isFull || busyId === c.id}
+                    onClick={() => assign(c)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
                     {busyId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Assign"}
                   </Button>
                 </div>
