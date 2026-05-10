@@ -19,6 +19,18 @@ import {
 } from "@/lib/customers";
 import { CustomerDetailDrawer } from "./CustomerDetailDrawer";
 import { QuickDateTabs, QuickDateRange, inQuickRange } from "./QuickDateTabs";
+import { cn } from "@/lib/utils";
+
+const matchesService = (role: string | null | undefined, key: "grabcar" | "grabfood") => {
+  const v = (role ?? "").toLowerCase();
+  if (key === "grabcar") return v.includes("grabcar") || v === "both";
+  return v.includes("grabfood") || v === "both";
+};
+const matchesCategory = (acc: string | null | undefined, key: "new" | "reactivation") => {
+  const v = (acc ?? "").toLowerCase();
+  if (key === "new") return v === "new" || v === "both";
+  return v === "reactivation" || v === "both";
+};
 
 interface Props {
   rows: Customer[];
@@ -47,12 +59,15 @@ export const MyCustomersTable = ({ rows, loading, error, refetch, initialCustome
   const [ic, setIc] = useState("");
   const [service, setService] = useState("all");
   const [category, setCategory] = useState("all");
+  const [location, setLocation] = useState("all");
   const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
   const [followState, setFollowState] = useState("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [quickRange, setQuickRange] = useState<QuickDateRange>("all");
+  const [quickService, setQuickService] = useState<"all" | "grabcar" | "grabfood">("all");
+  const [quickAccount, setQuickAccount] = useState<"all" | "new" | "reactivation">("all");
   const [page, setPage] = useState(1);
   const [details, setDetails] = useState<Customer | null>(null);
   const [autoOpened, setAutoOpened] = useState<string | null>(null);
@@ -73,15 +88,24 @@ export const MyCustomersTable = ({ rows, loading, error, refetch, initialCustome
     () => Array.from(new Set(rows.map((r) => r.account_status).filter(Boolean))) as string[],
     [rows],
   );
+  const locations = useMemo(
+    () => Array.from(
+      new Set(rows.map((r) => r.location_choice ?? r.state).filter(Boolean)),
+    ) as string[],
+    [rows],
+  );
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
       if (!inQuickRange(r.registration_date ?? r.created_at, quickRange)) return false;
+      if (quickService !== "all" && !matchesService(r.user_role, quickService)) return false;
+      if (quickAccount !== "all" && !matchesCategory(r.account_status, quickAccount)) return false;
       if (search && !(r.full_name ?? "").toLowerCase().includes(search.toLowerCase())) return false;
       if (phone && !(r.phone_number ?? "").includes(phone)) return false;
       if (ic && !(r.ic_number ?? "").toLowerCase().includes(ic.toLowerCase())) return false;
       if (service !== "all" && r.user_role !== service) return false;
       if (category !== "all" && r.account_status !== category) return false;
+      if (location !== "all" && (r.location_choice ?? r.state) !== location) return false;
       if (status !== "all" && r.customer_status !== status) return false;
       if (priority !== "all" && r.priority_status !== priority) return false;
       if (followState === "today" && !isToday(r.next_follow_up_date)) return false;
@@ -97,7 +121,7 @@ export const MyCustomersTable = ({ rows, loading, error, refetch, initialCustome
       }
       return true;
     });
-  }, [rows, search, phone, ic, service, category, status, priority, followState, from, to, quickRange]);
+  }, [rows, search, phone, ic, service, category, location, status, priority, followState, from, to, quickRange, quickService, quickAccount]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
@@ -107,13 +131,49 @@ export const MyCustomersTable = ({ rows, loading, error, refetch, initialCustome
 
   const reset = () => {
     setSearch(""); setPhone(""); setIc("");
-    setService("all"); setCategory("all"); setStatus("all"); setPriority("all");
+    setService("all"); setCategory("all"); setLocation("all"); setStatus("all"); setPriority("all");
     setFollowState("all"); setFrom(""); setTo(""); setPage(1);
+    setQuickService("all"); setQuickAccount("all");
   };
 
   return (
     <div className="space-y-4">
       <QuickDateTabs rows={rows} value={quickRange} onChange={(v) => { setQuickRange(v); setPage(1); }} />
+      {/* Quick service & account chips */}
+      <Card className="p-3 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-muted-foreground mr-1">Quick filter:</span>
+        {([
+          { v: "all", label: "All services" },
+          { v: "grabcar", label: "GrabCar" },
+          { v: "grabfood", label: "GrabFood" },
+        ] as const).map((opt) => (
+          <Button
+            key={opt.v}
+            size="sm"
+            variant={quickService === opt.v ? "default" : "outline"}
+            className={cn("h-8", quickService === opt.v && "bg-brand text-brand-foreground hover:bg-brand/90")}
+            onClick={() => { setQuickService(opt.v); setPage(1); }}
+          >
+            {opt.label}
+          </Button>
+        ))}
+        <span className="mx-2 h-5 w-px bg-border" />
+        {([
+          { v: "all", label: "All accounts" },
+          { v: "new", label: "New Account" },
+          { v: "reactivation", label: "Reactivation" },
+        ] as const).map((opt) => (
+          <Button
+            key={opt.v}
+            size="sm"
+            variant={quickAccount === opt.v ? "default" : "outline"}
+            className={cn("h-8", quickAccount === opt.v && "bg-brand text-brand-foreground hover:bg-brand/90")}
+            onClick={() => { setQuickAccount(opt.v); setPage(1); }}
+          >
+            {opt.label}
+          </Button>
+        ))}
+      </Card>
       {/* Filters */}
       <Card className="p-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -149,6 +209,16 @@ export const MyCustomersTable = ({ rows, loading, error, refetch, initialCustome
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 {categories.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Location</Label>
+            <Select value={location} onValueChange={(v) => { setLocation(v); setPage(1); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {locations.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
