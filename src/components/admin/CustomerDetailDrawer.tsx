@@ -576,9 +576,9 @@ export const CustomerDetailDrawer = ({
                 />
                 <LabeledSelect
                   label="Eligibility status"
-                  editable={editable}
+                  editable={false}
                   value={form.eligibility_status}
-                  onChange={(v) => set("eligibility_status", v)}
+                  onChange={() => {}}
                   options={ELIGIBILITY_OPTIONS}
                 />
                 <EFBool
@@ -597,9 +597,9 @@ export const CustomerDetailDrawer = ({
                 />
                 <LabeledSelect
                   label="Criminal record"
-                  editable={editable}
+                  editable={false}
                   value={form.criminal_record_status}
-                  onChange={(v) => set("criminal_record_status", v)}
+                  onChange={() => {}}
                   options={CRIMINAL_RECORD_OPTIONS}
                 />
               </SectionCard>
