@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
@@ -23,6 +23,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 interface Props {
   customer: Customer | null;
@@ -31,6 +32,10 @@ interface Props {
   /** True only when current auth.uid() === customer.admin_in_charge */
   editable: boolean;
   onSaved: () => void;
+  /** Optional initial tab to open the drawer on. Defaults to "overview". */
+  initialTab?: "overview" | "personal" | "application" | "vehicle" | "notes";
+  /** When true, focus and highlight the Bolt URL input after the drawer opens. */
+  focusBoltUrl?: boolean;
 }
 
 const SectionCard = ({
@@ -245,10 +250,28 @@ const PSV_LICENSE_OPTIONS = [
 const INSURANCE_STATUS_OPTIONS = ["active", "expired", "pending", "none"];
 
 export const CustomerDetailDrawer = ({
-  customer, open, onOpenChange, editable, onSaved,
+  customer, open, onOpenChange, editable, onSaved, initialTab, focusBoltUrl,
 }: Props) => {
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>(initialTab ?? "overview");
+  const boltUrlRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (open) setActiveTab(initialTab ?? "overview");
+  }, [open, initialTab, customer?.id]);
+
+  useEffect(() => {
+    if (!open || !focusBoltUrl) return;
+    const t = setTimeout(() => {
+      const el = boltUrlRef.current;
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [open, focusBoltUrl, activeTab]);
 
   useEffect(() => {
     if (customer) {
@@ -444,7 +467,7 @@ export const CustomerDetailDrawer = ({
         </div>
 
         <div className="p-6 pt-4">
-          <Tabs defaultValue="overview" className="space-y-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList className="grid grid-cols-5 w-full">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="personal">Personal</TabsTrigger>
@@ -689,15 +712,29 @@ export const CustomerDetailDrawer = ({
                     </div>
                   )}
                 </div>
-                <div className="sm:col-span-2">
-                  <EFText
-                    label="Bolt URL"
-                    editable={editable}
-                    value={form.bolt_url}
-                    onChange={(v) => set("bolt_url", v)}
-                    type="url"
-                    capitalize={false}
-                  />
+                <div className={`sm:col-span-2 space-y-1 ${focusBoltUrl ? "rounded-md ring-2 ring-brand/60 p-2 -m-2" : ""}`}>
+                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground font-normal">
+                    Bolt URL
+                  </Label>
+                  {editable ? (
+                    <Input
+                      ref={boltUrlRef}
+                      type="url"
+                      value={form.bolt_url ?? ""}
+                      onChange={(e) => set("bolt_url", e.target.value)}
+                      placeholder="https://..."
+                      className="h-9"
+                    />
+                  ) : (
+                    <div className="mt-0.5 text-sm text-charcoal break-words">
+                      {form.bolt_url || "—"}
+                    </div>
+                  )}
+                  {focusBoltUrl && editable && (
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      Please add Bolt URL first.
+                    </p>
+                  )}
                   {!editable && form.bolt_url && (
                     <a
                       href={form.bolt_url}
