@@ -160,6 +160,17 @@ const normalizeEligibility = (v: string | null | undefined): string => {
   return v ?? "";
 };
 
+/** Normalize legacy account_status values to backend-accepted values. */
+const normalizeAccountStatus = (v: string | null | undefined, userRole: string | null | undefined): string => {
+  const s = (v ?? "").trim().toLowerCase();
+  const isGrabFood = (userRole ?? "").toLowerCase() === "grabfood";
+  if (!s) return "";
+  if (s === "reactivation") return isGrabFood ? "new" : "reactivation";
+  if (s === "new") return "new";
+  // Map any other legacy values (active, suspended, closed) to empty so admin must pick a valid one
+  return "";
+};
+
 const toForm = (c: Customer): FormState => ({
   full_name: c.full_name ?? "",
   ic_number: c.ic_number ?? "",
@@ -168,7 +179,7 @@ const toForm = (c: Customer): FormState => ({
   user_role: c.user_role ?? "",
   location_choice: c.location_choice ?? "",
   state: c.state ?? "",
-  account_status: c.account_status ?? "",
+  account_status: normalizeAccountStatus(c.account_status, c.user_role),
   blue_ic_status: c.blue_ic_status ?? null,
   license_type: normalizeLicenseType(c.license_type),
   criminal_record_status: normalizeCriminal(c.criminal_record_status),
@@ -203,7 +214,15 @@ const toForm = (c: Customer): FormState => ({
 });
 
 const USER_ROLE_OPTIONS = ["GrabCar", "GrabFood"];
-const ACCOUNT_STATUS_OPTIONS = ["new", "active", "suspended", "closed"];
+
+const ACCOUNT_STATUS_OPTIONS_GRABCAR = [
+  { label: "New", value: "new" },
+  { label: "Reactivation", value: "reactivation" },
+];
+const ACCOUNT_STATUS_OPTIONS_GRABFOOD = [
+  { label: "New", value: "new" },
+];
+
 const ELIGIBILITY_OPTIONS = [
   { label: "Eligible", value: "eligible" },
   { label: "Rejected", value: "rejected" },
@@ -542,15 +561,20 @@ export const CustomerDetailDrawer = ({
                   label="Service / user role"
                   editable={editable}
                   value={form.user_role}
-                  onChange={(v) => set("user_role", v)}
+                  onChange={(v) => {
+                    set("user_role", v);
+                    if (v.toLowerCase() === "grabfood" && form.account_status === "reactivation") {
+                      set("account_status", "new");
+                    }
+                  }}
                   options={USER_ROLE_OPTIONS}
                 />
-                <EFSelect
+                <LabeledSelect
                   label="Account status"
                   editable={editable}
                   value={form.account_status}
                   onChange={(v) => set("account_status", v)}
-                  options={ACCOUNT_STATUS_OPTIONS}
+                  options={isGrabCar ? ACCOUNT_STATUS_OPTIONS_GRABCAR : ACCOUNT_STATUS_OPTIONS_GRABFOOD}
                 />
                 <LabeledSelect
                   label="Eligibility status"
