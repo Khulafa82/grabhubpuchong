@@ -16,7 +16,6 @@ import {
   ATTENDANCE_STATUSES,
   AttendanceStatus,
   attendanceBadgeClass,
-  attendanceToWorkflow,
   classBadgeClass,
   classCapacityState,
   derivePsvClassStatus,
