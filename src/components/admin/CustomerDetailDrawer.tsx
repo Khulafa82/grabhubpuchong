@@ -466,7 +466,7 @@ export const CustomerDetailDrawer = ({
         </div>
 
         <div className="p-6 pt-4">
-          <Tabs defaultValue="overview" className="space-y-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList className="grid grid-cols-5 w-full">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="personal">Personal</TabsTrigger>
