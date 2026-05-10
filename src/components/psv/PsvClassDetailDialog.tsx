@@ -85,6 +85,18 @@ export const PsvClassDetailDialog = ({
     onChanged();
   };
 
+  const refreshClassAndAssignments = async () => {
+    const { data: freshClass, error: classErr } = await supabase
+      .from("psv_classes")
+      .select("*")
+      .eq("id", selectedClass.id)
+      .maybeSingle();
+    if (classErr) toast.error(classErr.message);
+    if (freshClass) setCurrentClass(freshClass as PsvClass);
+    refetch();
+    onChanged();
+  };
+
   // Release one slot on the class (used when an assignment is removed/rescheduled).
   const releaseSlot = async () => {
     const newBooked = Math.max(booked - 1, 0);
@@ -94,9 +106,9 @@ export const PsvClassDetailDialog = ({
       .update({
         booked_count: newBooked,
         available_slots: newAvail,
-        status: derivePsvClassStatus(cap, newBooked, psvClass.status),
+        status: derivePsvClassStatus(cap, newBooked, selectedClass.status),
       })
-      .eq("id", psvClass.id);
+      .eq("id", selectedClass.id);
   };
 
   const markAttendance = async (
