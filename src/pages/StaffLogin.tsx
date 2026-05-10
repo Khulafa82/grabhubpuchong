@@ -78,7 +78,7 @@ const StaffLogin = () => {
 
   // Auto-redirect if already signed in with valid profile
   useEffect(() => {
-    if (!authLoading && user && profile && profile.status === "active") {
+    if (!authLoading && user && profile && profile.status === "active" && profile.account_locked !== true) {
       if (profile.first_login_completed === false) {
         navigate("/first-time-password-change", { replace: true });
         return;
@@ -87,6 +87,14 @@ const StaffLogin = () => {
       if (path) navigate(path, { replace: true });
     }
   }, [authLoading, user, profile, navigate]);
+
+  // Show locked notice when redirected here due to lock
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("locked") === "1") {
+      setError("Access denied. Your account has been locked. Please contact IT Technician.");
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,6 +151,20 @@ const StaffLogin = () => {
     if (prof.status !== "active") {
       await supabase.auth.signOut();
       setError("Your account is inactive. Please contact your administrator.");
+      resetCaptcha();
+      setLoading(false);
+      return;
+    }
+
+    if (prof.account_locked === true) {
+      await supabase.auth.signOut();
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch {
+        /* noop */
+      }
+      setError("Access denied. Your account has been locked. Please contact IT Technician.");
       resetCaptcha();
       setLoading(false);
       return;
