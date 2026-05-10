@@ -55,6 +55,17 @@ export const PsvClassDetailDialog = ({
   }, [psvClass]);
 
   const existingCustomerIds = useMemo(() => new Set(data.map((d) => d.customer_id)), [data]);
+  const filteredAssignments = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return data.filter((r) => {
+      if (attFilter !== "all" && (r.attendance_status ?? "Pending") !== attFilter) return false;
+      if (q) {
+        const hay = `${r.customer?.full_name ?? ""} ${r.customer?.phone_number ?? ""} ${r.admin_name ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [data, attFilter, search]);
 
   if (!currentClass) return null;
 
@@ -145,18 +156,6 @@ export const PsvClassDetailDialog = ({
     toast.success("Customer released for rescheduling");
     refreshClassAndAssignments();
   };
-
-  const filteredAssignments = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return data.filter((r) => {
-      if (attFilter !== "all" && (r.attendance_status ?? "Pending") !== attFilter) return false;
-      if (q) {
-        const hay = `${r.customer?.full_name ?? ""} ${r.customer?.phone_number ?? ""} ${r.admin_name ?? ""}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [data, attFilter, search]);
 
   const cancelClass = async () => {
     setBusy(true);
