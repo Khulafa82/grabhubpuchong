@@ -212,9 +212,9 @@ export const PsvClassDetailDialog = ({
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
             <Info icon={Calendar} label="Date" value={dateStr} />
-            <Info icon={Clock} label="Time" value={formatTimeRange(psvClass.start_time, psvClass.end_time)} />
-            <Info icon={MapPin} label="Location" value={psvClass.location ?? "—"} />
-            <Info icon={GraduationCap} label="Instructor" value={psvClass.instructor ?? "—"} />
+            <Info icon={Clock} label="Time" value={formatTimeRange(selectedClass.start_time, selectedClass.end_time)} />
+            <Info icon={MapPin} label="Location" value={selectedClass.location ?? "—"} />
+            <Info icon={GraduationCap} label="Instructor" value={selectedClass.instructor ?? "—"} />
             <Info icon={Users} label="Capacity" value={`${booked}/${cap || "—"} booked`} />
             <Info icon={Users} label="Available" value={`${available} slots`} />
             <Info icon={Users} label="Attended" value={String(attended)} />
@@ -222,22 +222,22 @@ export const PsvClassDetailDialog = ({
             <Info icon={Users} label="Pending" value={String(pending)} />
           </div>
 
-          {psvClass.notes && (
+          {selectedClass.notes && (
             <div className="text-xs text-muted-foreground p-3 rounded bg-surface-muted whitespace-pre-wrap">
-              {psvClass.notes}
+              {selectedClass.notes}
             </div>
           )}
 
           <div className="flex items-center justify-between mt-4 mb-2">
             <h4 className="font-semibold text-charcoal">Assigned customers ({data.length})</h4>
-            {canAssign && (
+            {canShowAssignButton && (
               <Button
                 size="sm"
                 onClick={() => setAssignOpen(true)}
-                disabled={isFull}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={isCapacityFull}
+                className="bg-brand text-brand-foreground hover:bg-brand-dark"
               >
-                <UserPlus className="w-4 h-4 mr-1.5" /> Assign Customer
+                {isCapacityFull ? "Class Full" : <><UserPlus className="w-4 h-4 mr-1.5" /> Assign Customer</>}
               </Button>
             )}
           </div>
