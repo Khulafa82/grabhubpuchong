@@ -78,7 +78,7 @@ export const PsvClassDetailDialog = ({
     : "—";
 
   const canEditAttendance = role === "admin" || role === "it_tech" || role === "super_admin";
-  const isCapacityFull = cap > 0 && booked >= cap;
+  const isCapacityFull = booked >= cap;
   const canShowAssignButton = state !== "Cancelled";
 
   const refreshAll = () => {
@@ -238,7 +238,7 @@ export const PsvClassDetailDialog = ({
                 disabled={isCapacityFull}
                 className="bg-brand text-brand-foreground hover:bg-brand-dark"
               >
-                {isCapacityFull ? "Class Full" : <><UserPlus className="w-4 h-4 mr-1.5" /> Assign Customer</>}
+                {isCapacityFull ? "Class Full" : <><UserPlus className="w-4 h-4 mr-1.5" /> + Assign Customer</>}
               </Button>
             )}
           </div>
