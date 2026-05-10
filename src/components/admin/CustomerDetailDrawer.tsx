@@ -160,6 +160,17 @@ const normalizeEligibility = (v: string | null | undefined): string => {
   return v ?? "";
 };
 
+/** Normalize legacy account_status values to backend-accepted values. */
+const normalizeAccountStatus = (v: string | null | undefined, userRole: string | null | undefined): string => {
+  const s = (v ?? "").trim().toLowerCase();
+  const isGrabFood = (userRole ?? "").toLowerCase() === "grabfood";
+  if (!s) return "";
+  if (s === "reactivation") return isGrabFood ? "new" : "reactivation";
+  if (s === "new") return "new";
+  // Map any other legacy values (active, suspended, closed) to empty so admin must pick a valid one
+  return "";
+};
+
 const toForm = (c: Customer): FormState => ({
   full_name: c.full_name ?? "",
   ic_number: c.ic_number ?? "",
