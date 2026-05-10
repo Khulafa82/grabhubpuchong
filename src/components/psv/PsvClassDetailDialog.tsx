@@ -291,7 +291,7 @@ export const PsvClassDetailDialog = ({
           )}
 
           <div className="flex items-center justify-between mt-4 mb-2">
-            <h4 className="font-semibold text-charcoal">Assigned customers ({data.length})</h4>
+            <h4 className="font-semibold text-charcoal">Assigned customers ({visibleAssignments.length})</h4>
             {canShowAssignButton && (
               <Button
                 size="sm"
