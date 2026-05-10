@@ -179,7 +179,7 @@ const toForm = (c: Customer): FormState => ({
   user_role: c.user_role ?? "",
   location_choice: c.location_choice ?? "",
   state: c.state ?? "",
-  account_status: c.account_status ?? "",
+  account_status: normalizeAccountStatus(c.account_status, c.user_role),
   blue_ic_status: c.blue_ic_status ?? null,
   license_type: normalizeLicenseType(c.license_type),
   criminal_record_status: normalizeCriminal(c.criminal_record_status),
