@@ -206,8 +206,13 @@ export const PsvClassDetailDialog = ({
           <div className="flex items-center justify-between mt-4 mb-2">
             <h4 className="font-semibold text-charcoal">Assigned customers ({data.length})</h4>
             {canAssign && (
-              <Button size="sm" onClick={() => setAssignOpen(true)} disabled={isFull}>
-                <UserPlus className="w-4 h-4 mr-1.5" /> Assign customer
+              <Button
+                size="sm"
+                onClick={() => setAssignOpen(true)}
+                disabled={isFull}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <UserPlus className="w-4 h-4 mr-1.5" /> Assign Customer
               </Button>
             )}
           </div>
