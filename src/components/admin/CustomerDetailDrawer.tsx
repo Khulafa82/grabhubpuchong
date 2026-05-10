@@ -711,15 +711,29 @@ export const CustomerDetailDrawer = ({
                     </div>
                   )}
                 </div>
-                <div className="sm:col-span-2">
-                  <EFText
-                    label="Bolt URL"
-                    editable={editable}
-                    value={form.bolt_url}
-                    onChange={(v) => set("bolt_url", v)}
-                    type="url"
-                    capitalize={false}
-                  />
+                <div className={`sm:col-span-2 space-y-1 ${focusBoltUrl ? "rounded-md ring-2 ring-brand/60 p-2 -m-2" : ""}`}>
+                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground font-normal">
+                    Bolt URL
+                  </Label>
+                  {editable ? (
+                    <Input
+                      ref={boltUrlRef}
+                      type="url"
+                      value={form.bolt_url ?? ""}
+                      onChange={(e) => set("bolt_url", e.target.value)}
+                      placeholder="https://..."
+                      className="h-9"
+                    />
+                  ) : (
+                    <div className="mt-0.5 text-sm text-charcoal break-words">
+                      {form.bolt_url || "—"}
+                    </div>
+                  )}
+                  {focusBoltUrl && editable && (
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      Please add Bolt URL first.
+                    </p>
+                  )}
                   {!editable && form.bolt_url && (
                     <a
                       href={form.bolt_url}
