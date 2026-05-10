@@ -18,6 +18,7 @@ import {
   CUSTOMER_STATUS_OPTIONS, PRIORITY_OPTIONS,
 } from "@/lib/customers";
 import { CustomerDetailDrawer } from "./CustomerDetailDrawer";
+import { QuickDateTabs, QuickDateRange, inQuickRange } from "./QuickDateTabs";
 
 interface Props {
   rows: Customer[];
@@ -50,6 +51,7 @@ export const MyCustomersTable = ({ rows, loading, error, refetch }: Props) => {
   const [followState, setFollowState] = useState("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [quickRange, setQuickRange] = useState<QuickDateRange>("all");
   const [page, setPage] = useState(1);
   const [details, setDetails] = useState<Customer | null>(null);
 
@@ -64,6 +66,7 @@ export const MyCustomersTable = ({ rows, loading, error, refetch }: Props) => {
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
+      if (!inQuickRange(r.registration_date ?? r.created_at, quickRange)) return false;
       if (search && !(r.full_name ?? "").toLowerCase().includes(search.toLowerCase())) return false;
       if (phone && !(r.phone_number ?? "").includes(phone)) return false;
       if (ic && !(r.ic_number ?? "").toLowerCase().includes(ic.toLowerCase())) return false;
@@ -84,7 +87,7 @@ export const MyCustomersTable = ({ rows, loading, error, refetch }: Props) => {
       }
       return true;
     });
-  }, [rows, search, phone, ic, service, category, status, priority, followState, from, to]);
+  }, [rows, search, phone, ic, service, category, status, priority, followState, from, to, quickRange]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
@@ -100,6 +103,7 @@ export const MyCustomersTable = ({ rows, loading, error, refetch }: Props) => {
 
   return (
     <div className="space-y-4">
+      <QuickDateTabs rows={rows} value={quickRange} onChange={(v) => { setQuickRange(v); setPage(1); }} />
       {/* Filters */}
       <Card className="p-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
