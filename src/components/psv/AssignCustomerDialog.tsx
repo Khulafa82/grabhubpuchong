@@ -223,7 +223,7 @@ export const AssignCustomerDialog = ({
                     size="sm"
                     disabled={isFull || busyId === c.id}
                     onClick={() => assign(c)}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="bg-brand text-brand-foreground hover:bg-brand-dark"
                   >
                     {busyId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Assign"}
                   </Button>
