@@ -143,7 +143,7 @@ export const PsvClassDetailDialog = ({
     if (custErr) return toast.error(custErr.message);
     await releaseSlot();
     toast.success("Customer released for rescheduling");
-    refreshAll();
+    refreshClassAndAssignments();
   };
 
   const filteredAssignments = useMemo(() => {
@@ -356,7 +356,7 @@ export const PsvClassDetailDialog = ({
                               .eq("id", row.customer_id);
                             await releaseSlot();
                             toast.success("Removed from class");
-                            refreshAll();
+                            refreshClassAndAssignments();
                           }}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
