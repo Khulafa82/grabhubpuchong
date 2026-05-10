@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { PsvClass, PSV_WORKFLOW, classCapacityState } from "@/lib/psv";
+import { PsvClass, PSV_WORKFLOW, classCapacityState, derivePsvClassStatus } from "@/lib/psv";
 import { PsvRole } from "./PsvCalendarPage";
 
 interface Eligible {
@@ -60,8 +60,6 @@ export const AssignCustomerDialog = ({
         .is("psv_class_id", null)
         .in("customer_status", ELIGIBLE_STATUSES)
         .order("updated_at", { ascending: false, nullsFirst: false });
-      // Admin sees only their own customers; super_admin / IT see all.
-      if (role === "admin" && myId) q = q.eq("admin_in_charge", myId);
       const { data, error } = await q.limit(200);
       if (cancelled) return;
       if (error) {
@@ -90,7 +88,7 @@ export const AssignCustomerDialog = ({
     return () => {
       cancelled = true;
     };
-  }, [open, role, myId]);
+  }, [open]);
 
   const state = classCapacityState(psvClass);
   const cap = psvClass.capacity ?? 0;
@@ -150,13 +148,22 @@ export const AssignCustomerDialog = ({
       toast.error(custErr.message);
       return;
     }
-    // Increment booked_count / decrement available_slots.
+    // Increment booked_count / decrement available_slots and keep status in sync.
     const newBooked = booked + 1;
     const newAvail = Math.max(cap - newBooked, 0);
-    await supabase
+    const { error: classErr } = await supabase
       .from("psv_classes")
-      .update({ booked_count: newBooked, available_slots: newAvail })
+      .update({
+        booked_count: newBooked,
+        available_slots: newAvail,
+        status: derivePsvClassStatus(cap, newBooked, psvClass.status),
+      })
       .eq("id", psvClass.id);
+    if (classErr) {
+      setBusyId(null);
+      toast.error(classErr.message);
+      return;
+    }
     setBusyId(null);
     toast.success(`${customer.full_name ?? "Customer"} assigned to class`);
     onAssigned();
@@ -216,7 +223,7 @@ export const AssignCustomerDialog = ({
                     size="sm"
                     disabled={isFull || busyId === c.id}
                     onClick={() => assign(c)}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="bg-brand text-brand-foreground hover:bg-brand-dark"
                   >
                     {busyId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Assign"}
                   </Button>

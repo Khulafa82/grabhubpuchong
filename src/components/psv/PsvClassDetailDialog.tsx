@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Calendar, Clock, MapPin, Users, GraduationCap, UserPlus, Phone, Pencil, Trash2, Ban, Check, X, RotateCcw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
@@ -16,9 +16,9 @@ import {
   ATTENDANCE_STATUSES,
   AttendanceStatus,
   attendanceBadgeClass,
-  attendanceToWorkflow,
   classBadgeClass,
   classCapacityState,
+  derivePsvClassStatus,
   formatTimeRange,
   PSV_WORKFLOW,
   psvWorkflowBadgeClass,
@@ -43,23 +43,43 @@ export const PsvClassDetailDialog = ({
   psvClass, open, onOpenChange, role, myId, onChanged, canEdit, canDelete, onEdit,
 }: Props) => {
   const { data, loading, error, refetch } = usePsvAssignments(open ? psvClass?.id : null);
+  const [currentClass, setCurrentClass] = useState<PsvClass | null>(psvClass);
   const [assignOpen, setAssignOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [attFilter, setAttFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
 
-  if (!psvClass) return null;
+  useEffect(() => {
+    setCurrentClass(psvClass);
+  }, [psvClass]);
 
-  const state = classCapacityState(psvClass);
-  const cap = psvClass.capacity ?? 0;
-  const booked = psvClass.booked_count ?? 0;
-  const available = psvClass.available_slots ?? Math.max(cap - booked, 0);
+  const existingCustomerIds = useMemo(() => new Set(data.map((d) => d.customer_id)), [data]);
+  const filteredAssignments = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return data.filter((r) => {
+      if (attFilter !== "all" && (r.attendance_status ?? "Pending") !== attFilter) return false;
+      if (q) {
+        const hay = `${r.customer?.full_name ?? ""} ${r.customer?.phone_number ?? ""} ${r.admin_name ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [data, attFilter, search]);
+
+  if (!currentClass) return null;
+
+  const selectedClass = currentClass;
+
+  const state = classCapacityState(selectedClass);
+  const cap = selectedClass.capacity ?? 0;
+  const booked = selectedClass.booked_count ?? 0;
+  const available = selectedClass.available_slots ?? Math.max(cap - booked, 0);
   const attended = data.filter((d) => d.attendance_status === "Attended").length;
   const absent = data.filter((d) => d.attendance_status === "Absent").length;
   const pending = data.filter((d) => !d.attendance_status || d.attendance_status === "Pending").length;
-  const dateStr = psvClass.class_date
-    ? new Date(psvClass.class_date).toLocaleDateString(undefined, {
+  const dateStr = selectedClass.class_date
+    ? new Date(selectedClass.class_date).toLocaleDateString(undefined, {
         weekday: "long",
         day: "2-digit",
         month: "long",
@@ -67,11 +87,23 @@ export const PsvClassDetailDialog = ({
       })
     : "—";
 
-  const canAssign = role === "admin" || role === "super_admin";
   const canEditAttendance = role === "admin" || role === "it_tech" || role === "super_admin";
-  const isFull = state === "Full" || state === "Cancelled" || state === "Completed";
+  const isCapacityFull = booked >= cap;
+  const canShowAssignButton = state !== "Cancelled";
 
   const refreshAll = () => {
+    refetch();
+    onChanged();
+  };
+
+  const refreshClassAndAssignments = async () => {
+    const { data: freshClass, error: classErr } = await supabase
+      .from("psv_classes")
+      .select("*")
+      .eq("id", selectedClass.id)
+      .maybeSingle();
+    if (classErr) toast.error(classErr.message);
+    if (freshClass) setCurrentClass(freshClass as PsvClass);
     refetch();
     onChanged();
   };
@@ -82,8 +114,12 @@ export const PsvClassDetailDialog = ({
     const newAvail = cap > 0 ? Math.max(cap - newBooked, 0) : 0;
     await supabase
       .from("psv_classes")
-      .update({ booked_count: newBooked, available_slots: newAvail })
-      .eq("id", psvClass.id);
+      .update({
+        booked_count: newBooked,
+        available_slots: newAvail,
+        status: derivePsvClassStatus(cap, newBooked, selectedClass.status),
+      })
+      .eq("id", selectedClass.id);
   };
 
   const markAttendance = async (
@@ -118,25 +154,13 @@ export const PsvClassDetailDialog = ({
     if (custErr) return toast.error(custErr.message);
     await releaseSlot();
     toast.success("Customer released for rescheduling");
-    refreshAll();
+    refreshClassAndAssignments();
   };
-
-  const filteredAssignments = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return data.filter((r) => {
-      if (attFilter !== "all" && (r.attendance_status ?? "Pending") !== attFilter) return false;
-      if (q) {
-        const hay = `${r.customer?.full_name ?? ""} ${r.customer?.phone_number ?? ""} ${r.admin_name ?? ""}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [data, attFilter, search]);
 
   const cancelClass = async () => {
     setBusy(true);
     const { error: err } = await supabase
-      .from("psv_classes").update({ status: "Cancelled" }).eq("id", psvClass.id);
+      .from("psv_classes").update({ status: "Cancelled" }).eq("id", selectedClass.id);
     setBusy(false);
     if (err) return toast.error(err.message);
     toast.success("Class cancelled");
@@ -145,7 +169,7 @@ export const PsvClassDetailDialog = ({
 
   const deleteClass = async () => {
     setBusy(true);
-    const { error: err } = await supabase.from("psv_classes").delete().eq("id", psvClass.id);
+    const { error: err } = await supabase.from("psv_classes").delete().eq("id", selectedClass.id);
     setBusy(false);
     if (err) return toast.error(err.message);
     toast.success("Class deleted");
@@ -161,13 +185,13 @@ export const PsvClassDetailDialog = ({
           <DialogHeader>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <DialogTitle className="text-xl">{psvClass.title ?? "Untitled class"}</DialogTitle>
+                <DialogTitle className="text-xl">{selectedClass.title ?? "Untitled class"}</DialogTitle>
                 <DialogDescription>PSV class details and attendance.</DialogDescription>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className={classBadgeClass(state)}>{state}</Badge>
                 {canEdit && (
-                  <Button size="sm" variant="outline" onClick={() => onEdit?.(psvClass)}>
+                  <Button size="sm" variant="outline" onClick={() => onEdit?.(selectedClass)}>
                     <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
                   </Button>
                 )}
@@ -187,9 +211,9 @@ export const PsvClassDetailDialog = ({
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
             <Info icon={Calendar} label="Date" value={dateStr} />
-            <Info icon={Clock} label="Time" value={formatTimeRange(psvClass.start_time, psvClass.end_time)} />
-            <Info icon={MapPin} label="Location" value={psvClass.location ?? "—"} />
-            <Info icon={GraduationCap} label="Instructor" value={psvClass.instructor ?? "—"} />
+            <Info icon={Clock} label="Time" value={formatTimeRange(selectedClass.start_time, selectedClass.end_time)} />
+            <Info icon={MapPin} label="Location" value={selectedClass.location ?? "—"} />
+            <Info icon={GraduationCap} label="Instructor" value={selectedClass.instructor ?? "—"} />
             <Info icon={Users} label="Capacity" value={`${booked}/${cap || "—"} booked`} />
             <Info icon={Users} label="Available" value={`${available} slots`} />
             <Info icon={Users} label="Attended" value={String(attended)} />
@@ -197,22 +221,22 @@ export const PsvClassDetailDialog = ({
             <Info icon={Users} label="Pending" value={String(pending)} />
           </div>
 
-          {psvClass.notes && (
+          {selectedClass.notes && (
             <div className="text-xs text-muted-foreground p-3 rounded bg-surface-muted whitespace-pre-wrap">
-              {psvClass.notes}
+              {selectedClass.notes}
             </div>
           )}
 
           <div className="flex items-center justify-between mt-4 mb-2">
             <h4 className="font-semibold text-charcoal">Assigned customers ({data.length})</h4>
-            {canAssign && (
+            {canShowAssignButton && (
               <Button
                 size="sm"
                 onClick={() => setAssignOpen(true)}
-                disabled={isFull}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={isCapacityFull}
+                className="bg-brand text-brand-foreground hover:bg-brand-dark"
               >
-                <UserPlus className="w-4 h-4 mr-1.5" /> Assign Customer
+                {isCapacityFull ? "Class Full" : <><UserPlus className="w-4 h-4 mr-1.5" /> + Assign Customer</>}
               </Button>
             )}
           </div>
@@ -331,7 +355,7 @@ export const PsvClassDetailDialog = ({
                               .eq("id", row.customer_id);
                             await releaseSlot();
                             toast.success("Removed from class");
-                            refreshAll();
+                            refreshClassAndAssignments();
                           }}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -349,11 +373,11 @@ export const PsvClassDetailDialog = ({
       <AssignCustomerDialog
         open={assignOpen}
         onOpenChange={setAssignOpen}
-        psvClass={psvClass}
+        psvClass={selectedClass}
         myId={myId}
         role={role}
-        existingCustomerIds={useMemo(() => new Set(data.map((d) => d.customer_id)), [data])}
-        onAssigned={refreshAll}
+        existingCustomerIds={existingCustomerIds}
+        onAssigned={refreshClassAndAssignments}
       />
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>

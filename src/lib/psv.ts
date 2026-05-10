@@ -104,6 +104,20 @@ export const classCapacityState = (c: PsvClass): "Open" | "Almost Full" | "Full"
   return "Open";
 };
 
+export const derivePsvClassStatus = (
+  capacity: number,
+  bookedCount: number,
+  currentStatus?: string | null,
+): "Open" | "Almost Full" | "Full" | "Completed" | "Cancelled" => {
+  const status = (currentStatus ?? "").toLowerCase();
+  if (status === "completed") return "Completed";
+  if (status === "cancelled" || status === "canceled") return "Cancelled";
+  const available = Math.max(capacity - bookedCount, 0);
+  if (capacity > 0 && available <= 0) return "Full";
+  if (capacity > 0 && available <= Math.max(1, Math.ceil(capacity * 0.2))) return "Almost Full";
+  return "Open";
+};
+
 export const classBadgeClass = (state: ReturnType<typeof classCapacityState>) => {
   switch (state) {
     case "Open":
