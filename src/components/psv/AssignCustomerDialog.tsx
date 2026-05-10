@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { PsvClass, PSV_WORKFLOW, classCapacityState } from "@/lib/psv";
+import { PsvClass, PSV_WORKFLOW, classCapacityState, derivePsvClassStatus } from "@/lib/psv";
 import { PsvRole } from "./PsvCalendarPage";
 
 interface Eligible {
@@ -150,13 +150,22 @@ export const AssignCustomerDialog = ({
       toast.error(custErr.message);
       return;
     }
-    // Increment booked_count / decrement available_slots.
+    // Increment booked_count / decrement available_slots and keep status in sync.
     const newBooked = booked + 1;
     const newAvail = Math.max(cap - newBooked, 0);
-    await supabase
+    const { error: classErr } = await supabase
       .from("psv_classes")
-      .update({ booked_count: newBooked, available_slots: newAvail })
+      .update({
+        booked_count: newBooked,
+        available_slots: newAvail,
+        status: derivePsvClassStatus(cap, newBooked, psvClass.status),
+      })
       .eq("id", psvClass.id);
+    if (classErr) {
+      setBusyId(null);
+      toast.error(classErr.message);
+      return;
+    }
     setBusyId(null);
     toast.success(`${customer.full_name ?? "Customer"} assigned to class`);
     onAssigned();
