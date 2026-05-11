@@ -30,7 +30,16 @@ import {
   MALAYSIA_PHONE_PLACEHOLDER,
   MALAYSIA_PHONE_HELPER_EN,
   MALAYSIA_PHONE_ERROR_EN,
-} from "@/lib/phone";
+  normalizeName,
+  isValidFullName,
+  FULL_NAME_ERROR_EN,
+  normalizeIC,
+  isValidMalaysiaIC,
+  IC_ERROR_EN,
+  normalizeEmail,
+  isValidGmail,
+  GMAIL_ERROR_EN,
+} from "@/utils/customerValidation";
 
 interface Props {
   customer: Customer | null;
@@ -315,6 +324,18 @@ export const CustomerDetailDrawer = ({
 
   const save = async () => {
     if (!editable) return;
+    if (form.full_name && !isValidFullName(form.full_name)) {
+      toast.error(FULL_NAME_ERROR_EN);
+      return;
+    }
+    if (form.ic_number && !isValidMalaysiaIC(form.ic_number)) {
+      toast.error(IC_ERROR_EN);
+      return;
+    }
+    if (form.email_address && !isValidGmail(form.email_address)) {
+      toast.error(GMAIL_ERROR_EN);
+      return;
+    }
     if (form.phone_number && !isValidMalaysiaPhone(form.phone_number)) {
       toast.error(MALAYSIA_PHONE_ERROR_EN);
       return;
@@ -577,9 +598,66 @@ export const CustomerDetailDrawer = ({
             {/* PERSONAL */}
             <TabsContent value="personal" className="space-y-4">
               <SectionCard title="Personal information">
-                <EFText label="Full name" editable={editable} value={form.full_name} onChange={(v) => set("full_name", v)} />
-                <EFText label="IC number" editable={editable} value={form.ic_number} onChange={(v) => set("ic_number", v)} mono capitalize={false} />
-                <EFText label="Email address" editable={editable} value={form.email_address} onChange={(v) => set("email_address", v)} type="email" capitalize={false} />
+                <div className="min-w-0 space-y-1">
+                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground font-normal">Full name</Label>
+                  {editable ? (
+                    <>
+                      <Input
+                        className="h-9 uppercase"
+                        value={form.full_name}
+                        maxLength={100}
+                        placeholder="AS PER IC"
+                        onChange={(e) => set("full_name", normalizeName(e.target.value))}
+                      />
+                      <p className={`text-xs ${form.full_name && !isValidFullName(form.full_name) ? "text-destructive" : "text-muted-foreground"}`}>
+                        {form.full_name && !isValidFullName(form.full_name) ? FULL_NAME_ERROR_EN : "Letters, spaces, @ ' . / - only. 3–100 chars."}
+                      </p>
+                    </>
+                  ) : (
+                    <div className="mt-0.5 text-sm text-charcoal break-words first-letter:uppercase">{form.full_name || "—"}</div>
+                  )}
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground font-normal">IC number</Label>
+                  {editable ? (
+                    <>
+                      <Input
+                        className="h-9 font-mono"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={12}
+                        value={form.ic_number}
+                        placeholder="900101145678"
+                        onChange={(e) => set("ic_number", normalizeIC(e.target.value))}
+                      />
+                      <p className={`text-xs ${form.ic_number && !isValidMalaysiaIC(form.ic_number) ? "text-destructive" : "text-muted-foreground"}`}>
+                        {form.ic_number && !isValidMalaysiaIC(form.ic_number) ? IC_ERROR_EN : "12 digits, no dash."}
+                      </p>
+                    </>
+                  ) : (
+                    <div className="mt-0.5 text-sm text-charcoal break-words font-mono">{form.ic_number || "—"}</div>
+                  )}
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground font-normal">Email address</Label>
+                  {editable ? (
+                    <>
+                      <Input
+                        type="email"
+                        className="h-9"
+                        value={form.email_address}
+                        maxLength={255}
+                        placeholder="name@gmail.com"
+                        onChange={(e) => set("email_address", normalizeEmail(e.target.value))}
+                      />
+                      <p className={`text-xs ${form.email_address && !isValidGmail(form.email_address) ? "text-destructive" : "text-muted-foreground"}`}>
+                        {form.email_address && !isValidGmail(form.email_address) ? GMAIL_ERROR_EN : "Must end with @gmail.com"}
+                      </p>
+                    </>
+                  ) : (
+                    <div className="mt-0.5 text-sm text-charcoal break-words">{form.email_address || "—"}</div>
+                  )}
+                </div>
                 <div className="min-w-0 space-y-1">
                   <Label className="text-[11px] uppercase tracking-wide text-muted-foreground font-normal">
                     Phone number
