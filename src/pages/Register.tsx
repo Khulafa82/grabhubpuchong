@@ -15,6 +15,13 @@ import {
 import { Logo } from "@/components/site/Logo";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
+import {
+  isValidMalaysiaPhone,
+  sanitizeMalaysiaPhoneInput,
+  MALAYSIA_PHONE_PLACEHOLDER,
+  MALAYSIA_PHONE_HELPER_EN,
+  MALAYSIA_PHONE_ERROR_EN,
+} from "@/lib/phone";
 
 type UserRole = "GrabCar" | "GrabFood" | "";
 type AccountStatus = "new" | "reactivation" | "";
@@ -129,7 +136,7 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
     if (!fullName.trim()) return "Full name is required.";
     if (!/^\d{12}$/.test(icNumber.trim())) return "IC number must be exactly 12 digits, no dashes.";
     if (!/^[\w.+-]+@gmail\.com$/i.test(email.trim())) return "Email must be a valid Gmail address.";
-    if (!/^601\d+$/.test(phone.trim())) return "Mobile number must start with 601.";
+    if (!isValidMalaysiaPhone(phone)) return MALAYSIA_PHONE_ERROR_EN;
     if (!stateVal) return "State is required.";
     return null;
   };
@@ -625,14 +632,32 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
                   />
                 </div>
                 <div>
-                  <Label>Mobile Number (start with 601)</Label>
+                  <Label>Mobile Number</Label>
                   <Input
                     className="mt-1.5"
                     inputMode="numeric"
+                    pattern="[0-9]*"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                    placeholder="e.g. 60123456789"
+                    onChange={(e) => setPhone(sanitizeMalaysiaPhoneInput(e.target.value))}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const text = e.clipboardData.getData("text");
+                      setPhone(sanitizeMalaysiaPhoneInput(text));
+                    }}
+                    placeholder={MALAYSIA_PHONE_PLACEHOLDER}
+                    maxLength={13}
                   />
+                  <p
+                    className={`text-xs mt-1 ${
+                      phone && !isValidMalaysiaPhone(phone)
+                        ? "text-destructive"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {phone && !isValidMalaysiaPhone(phone)
+                      ? MALAYSIA_PHONE_ERROR_EN
+                      : MALAYSIA_PHONE_HELPER_EN}
+                  </p>
                 </div>
               </div>
             </div>
