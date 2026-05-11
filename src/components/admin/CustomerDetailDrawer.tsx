@@ -24,6 +24,13 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import {
+  isValidMalaysiaPhone,
+  sanitizeMalaysiaPhoneInput,
+  MALAYSIA_PHONE_PLACEHOLDER,
+  MALAYSIA_PHONE_HELPER_EN,
+  MALAYSIA_PHONE_ERROR_EN,
+} from "@/lib/phone";
 
 interface Props {
   customer: Customer | null;
@@ -308,6 +315,10 @@ export const CustomerDetailDrawer = ({
 
   const save = async () => {
     if (!editable) return;
+    if (form.phone_number && !isValidMalaysiaPhone(form.phone_number)) {
+      toast.error(MALAYSIA_PHONE_ERROR_EN);
+      return;
+    }
     setSaving(true);
     const payload: Record<string, unknown> = {
       full_name: form.full_name || null,
@@ -569,7 +580,45 @@ export const CustomerDetailDrawer = ({
                 <EFText label="Full name" editable={editable} value={form.full_name} onChange={(v) => set("full_name", v)} />
                 <EFText label="IC number" editable={editable} value={form.ic_number} onChange={(v) => set("ic_number", v)} mono capitalize={false} />
                 <EFText label="Email address" editable={editable} value={form.email_address} onChange={(v) => set("email_address", v)} type="email" capitalize={false} />
-                <EFText label="Phone number" editable={editable} value={form.phone_number} onChange={(v) => set("phone_number", v)} type="tel" mono capitalize={false} />
+                <div className="min-w-0 space-y-1">
+                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground font-normal">
+                    Phone number
+                  </Label>
+                  {editable ? (
+                    <>
+                      <Input
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="h-9 font-mono"
+                        value={form.phone_number}
+                        maxLength={13}
+                        placeholder={MALAYSIA_PHONE_PLACEHOLDER}
+                        onChange={(e) => set("phone_number", sanitizeMalaysiaPhoneInput(e.target.value))}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const text = e.clipboardData.getData("text");
+                          set("phone_number", sanitizeMalaysiaPhoneInput(text));
+                        }}
+                      />
+                      <p
+                        className={`text-xs ${
+                          form.phone_number && !isValidMalaysiaPhone(form.phone_number)
+                            ? "text-destructive"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {form.phone_number && !isValidMalaysiaPhone(form.phone_number)
+                          ? MALAYSIA_PHONE_ERROR_EN
+                          : MALAYSIA_PHONE_HELPER_EN}
+                      </p>
+                    </>
+                  ) : (
+                    <div className="mt-0.5 text-sm text-charcoal break-words font-mono">
+                      {form.phone_number || "—"}
+                    </div>
+                  )}
+                </div>
                 <EFText label="State" editable={editable} value={form.state} onChange={(v) => set("state", v)} />
                 <EFText label="Location choice" editable={editable} value={form.location_choice} onChange={(v) => set("location_choice", v)} />
               </SectionCard>
