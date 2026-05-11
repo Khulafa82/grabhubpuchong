@@ -21,7 +21,16 @@ import {
   MALAYSIA_PHONE_PLACEHOLDER,
   MALAYSIA_PHONE_HELPER_EN,
   MALAYSIA_PHONE_ERROR_EN,
-} from "@/lib/phone";
+  normalizeName,
+  isValidFullName,
+  FULL_NAME_ERROR_EN,
+  normalizeIC,
+  isValidMalaysiaIC,
+  IC_ERROR_EN,
+  normalizeEmail,
+  isValidGmail,
+  GMAIL_ERROR_EN,
+} from "@/utils/customerValidation";
 
 type UserRole = "GrabCar" | "GrabFood" | "";
 type AccountStatus = "new" | "reactivation" | "";
@@ -133,9 +142,9 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
   })();
 
   const validateFinal = (): string | null => {
-    if (!fullName.trim()) return "Full name is required.";
-    if (!/^\d{12}$/.test(icNumber.trim())) return "IC number must be exactly 12 digits, no dashes.";
-    if (!/^[\w.+-]+@gmail\.com$/i.test(email.trim())) return "Email must be a valid Gmail address.";
+    if (!isValidFullName(fullName)) return FULL_NAME_ERROR_EN;
+    if (!isValidMalaysiaIC(icNumber)) return IC_ERROR_EN;
+    if (!isValidGmail(email)) return GMAIL_ERROR_EN;
     if (!isValidMalaysiaPhone(phone)) return MALAYSIA_PHONE_ERROR_EN;
     if (!stateVal) return "State is required.";
     return null;
@@ -150,9 +159,9 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
     setSubmitting(true);
 
     const payload: Record<string, unknown> = {
-      full_name: fullName.trim().toUpperCase(),
-      ic_number: icNumber.trim(),
-      email_address: email.trim() || null,
+      full_name: normalizeName(fullName).trim(),
+      ic_number: normalizeIC(icNumber),
+      email_address: normalizeEmail(email) || null,
       phone_number: phone.trim(),
       user_role: userRole,
       location_choice: locationChoice,
@@ -593,20 +602,28 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
                   <Input
                     className="mt-1.5 uppercase"
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    onChange={(e) => setFullName(normalizeName(e.target.value))}
                     placeholder="AS PER IC"
+                    maxLength={100}
                   />
+                  <p className={`text-xs mt-1 ${fullName && !isValidFullName(fullName) ? "text-destructive" : "text-muted-foreground"}`}>
+                    {fullName && !isValidFullName(fullName) ? FULL_NAME_ERROR_EN : "Letters, spaces, @ ' . / - only. 3–100 chars."}
+                  </p>
                 </div>
                 <div>
                   <Label>IC Number (12 digits, no dash)</Label>
                   <Input
                     className="mt-1.5"
                     inputMode="numeric"
+                    pattern="[0-9]*"
                     maxLength={12}
                     value={icNumber}
-                    onChange={(e) => setIcNumber(e.target.value.replace(/\D/g, ""))}
+                    onChange={(e) => setIcNumber(normalizeIC(e.target.value))}
                     placeholder="e.g. 900101145678"
                   />
+                  <p className={`text-xs mt-1 ${icNumber && !isValidMalaysiaIC(icNumber) ? "text-destructive" : "text-muted-foreground"}`}>
+                    {icNumber && !isValidMalaysiaIC(icNumber) ? IC_ERROR_EN : "12 digits, format YYMMDD-XX-XXXX without dash."}
+                  </p>
                 </div>
                 <div>
                   <Label>State</Label>
@@ -627,9 +644,13 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
                     type="email"
                     className="mt-1.5"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(normalizeEmail(e.target.value))}
                     placeholder="name@gmail.com"
+                    maxLength={255}
                   />
+                  <p className={`text-xs mt-1 ${email && !isValidGmail(email) ? "text-destructive" : "text-muted-foreground"}`}>
+                    {email && !isValidGmail(email) ? GMAIL_ERROR_EN : "Must end with @gmail.com"}
+                  </p>
                 </div>
                 <div>
                   <Label>Mobile Number</Label>
