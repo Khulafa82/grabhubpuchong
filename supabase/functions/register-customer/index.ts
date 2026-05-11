@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
     if (email && !/^[\w.+-]+@gmail\.com$/i.test(email)) {
       return json({ error: "VALIDATION", message: "Email must be a valid Gmail address." }, 400);
     }
-    if (!/^601\d{7,11}$/.test(phone)) {
+    if (!/^60(10|11|12|13|14|16|17|18|19)[0-9]{7,8}$/.test(phone)) {
       return json({ error: "VALIDATION", message: "Invalid mobile number." }, 400);
     }
     if (!ALLOWED_ROLES.includes(userRole as typeof ALLOWED_ROLES[number])) {
