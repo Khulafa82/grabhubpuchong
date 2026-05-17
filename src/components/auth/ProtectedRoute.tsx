@@ -2,6 +2,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ROLE_TO_PATH, StaffRole } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
+import { StaffSessionGuard } from "@/components/auth/StaffSessionGuard";
 
 interface Props {
   role: StaffRole;
@@ -40,5 +41,5 @@ export const ProtectedRoute = ({ role, children }: Props) => {
     return <Navigate to="/first-time-password-change" replace />;
   }
 
-  return <>{children}</>;
+  return <StaffSessionGuard>{children}</StaffSessionGuard>;
 };
