@@ -130,6 +130,11 @@ const TechSettings = () => {
   };
 
   const unlock = async (id: string) => {
+    const row = locked.find((r) => r.id === id);
+    if (!row || row.role !== "admin") {
+      toast.error("Access denied. IT Technician can only manage Admin accounts.");
+      return;
+    }
     setBusy(id);
     const { error } = await supabase
       .from("staff_profiles")
