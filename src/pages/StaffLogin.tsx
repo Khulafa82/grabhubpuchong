@@ -185,11 +185,16 @@ const StaffLogin = () => {
       return;
     }
 
-    // Start staff session (single-session enforcement)
-    const token = await startStaffSession();
-    if (!token) {
-      await supabase.auth.signOut();
-      setError("Could not start a secure session. Please try again.");
+    // Start staff session (single-session enforcement) — must complete before redirect
+    console.log("StaffLogin: auth user id =", signInData.user.id);
+    console.log("StaffLogin: staff profile id =", prof.id);
+    try {
+      await startStaffSession();
+    } catch (e) {
+      console.error("StaffLogin: startStaffSession threw", e);
+      setError(
+        e instanceof Error ? e.message : "Failed to initialize secure staff session.",
+      );
       resetCaptcha();
       setLoading(false);
       return;
