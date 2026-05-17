@@ -9,7 +9,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Logo } from "@/components/site/Logo";
 import { supabase, ROLE_TO_PATH, StaffRole } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { startStaffSession } from "@/lib/staffSession";
 
 const RECAPTCHA_SITE_KEY = "6Ldn5p4sAAAAAA5Mrjnt_mDjLfcsadxqwxFBIsGd";
 
@@ -182,21 +181,6 @@ const StaffLogin = () => {
 
     if (prof.first_login_completed === false) {
       navigate("/first-time-password-change", { replace: true });
-      return;
-    }
-
-    // Start staff session (single-session enforcement) — must complete before redirect
-    console.log("StaffLogin: auth user id =", signInData.user.id);
-    console.log("StaffLogin: staff profile id =", prof.id);
-    try {
-      await startStaffSession();
-    } catch (e) {
-      console.error("StaffLogin: startStaffSession threw", e);
-      setError(
-        e instanceof Error ? e.message : "Failed to initialize secure staff session.",
-      );
-      resetCaptcha();
-      setLoading(false);
       return;
     }
 

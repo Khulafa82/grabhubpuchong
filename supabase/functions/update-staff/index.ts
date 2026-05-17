@@ -89,25 +89,6 @@ Deno.serve(async (req) => {
       return json({ error: "Only super admin can assign the super admin role" }, 403);
     }
 
-    // IT Technician can only manage admin accounts and cannot edit own account here
-    if (callerRole === "it_tech") {
-      if (target.role !== "admin") {
-        return json(
-          { error: "Access denied. IT Technician can only manage Admin accounts." },
-          403,
-        );
-      }
-      if (targetId === userData.user.id) {
-        return json({ error: "You cannot edit your own account here." }, 403);
-      }
-      if (targetRole && targetRole !== "admin") {
-        return json(
-          { error: "IT Technician cannot change a staff role away from Admin." },
-          403,
-        );
-      }
-    }
-
     const newEmail = empty(email);
 
     // Update auth email if it changed

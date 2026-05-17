@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Loader2, Lock, RefreshCw, Settings2, Pencil, Plus, ShieldAlert, Search } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -82,14 +81,6 @@ const StaffAccounts = () => {
   };
 
   const toggleLock = async (s: Staff) => {
-    if (!canToggleLock(s)) {
-      toast.error(
-        isItTech
-          ? "IT Technician can only manage Admin accounts."
-          : "Access denied.",
-      );
-      return;
-    }
     const next = !s.account_locked;
     setBusyId(s.id);
     const { error } = await supabase
@@ -128,8 +119,6 @@ const StaffAccounts = () => {
   // Can the current user manage (edit/lock/scope/status) this row?
   const canManageRow = (s: Staff) => {
     if (!canManageStaff) return false;
-    if (s.id === profile?.id) return false;
-    if (isItTech) return s.role === "admin";
     if (s.role === "super_admin") return isSuperAdmin;
     return true;
   };
@@ -160,15 +149,6 @@ const StaffAccounts = () => {
   }, [rows, q]);
 
   const update = async (id: string, patch: Partial<Staff>) => {
-    const target = rows.find((r) => r.id === id);
-    if (!target || !canManageRow(target)) {
-      toast.error(
-        isItTech
-          ? "Access denied. IT Technician can only manage Admin accounts."
-          : "Access denied.",
-      );
-      return;
-    }
     setBusyId(id);
     const { error } = await supabase.from("staff_profiles").update(patch).eq("id", id);
     if (error) toast.error(error.message);
@@ -339,28 +319,9 @@ const StaffAccounts = () => {
                             {canEditScope && manage ? "Manage Scope" : "View Scope"}
                           </Button>
                         )}
-                        {canToggleLock(s) ? (
-                          <Button size="sm" variant={s.account_locked ? "default" : "outline"} disabled={busyId === s.id} onClick={() => toggleLock(s)}>
-                            <Lock className="w-3 h-3 mr-1" />{s.account_locked ? "Unlock" : "Lock"}
-                          </Button>
-                        ) : (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span tabIndex={0}>
-                                  <Button size="sm" variant="outline" disabled>
-                                    <Lock className="w-3 h-3 mr-1" />{s.account_locked ? "Unlock" : "Lock"}
-                                  </Button>
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {isItTech
-                                  ? "IT Technician can only manage Admin accounts."
-                                  : "You do not have permission to change this account."}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
+                        <Button size="sm" variant={s.account_locked ? "default" : "outline"} disabled={busyId === s.id || !canToggleLock(s)} onClick={() => toggleLock(s)}>
+                          <Lock className="w-3 h-3 mr-1" />{s.account_locked ? "Unlock" : "Lock"}
+                        </Button>
                       </div>
                     </td>
                   </tr>
