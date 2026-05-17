@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Loader2, Lock, RefreshCw, Settings2, Pencil, Plus, ShieldAlert, Search } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +81,13 @@ const StaffAccounts = () => {
     return false;
   };
 
+  const IT_TECH_RESTRICTED_MSG = "IT Technician can only manage Admin accounts.";
+
   const toggleLock = async (s: Staff) => {
+    if (isItTech && (s.role !== "admin" || s.id === profile?.id)) {
+      toast.error("Access denied. IT Technician can only manage Admin accounts.");
+      return;
+    }
     const next = !s.account_locked;
     setBusyId(s.id);
     const { error } = await supabase
@@ -119,6 +126,7 @@ const StaffAccounts = () => {
   // Can the current user manage (edit/lock/scope/status) this row?
   const canManageRow = (s: Staff) => {
     if (!canManageStaff) return false;
+    if (isItTech) return s.role === "admin" && s.id !== profile?.id;
     if (s.role === "super_admin") return isSuperAdmin;
     return true;
   };
@@ -149,6 +157,11 @@ const StaffAccounts = () => {
   }, [rows, q]);
 
   const update = async (id: string, patch: Partial<Staff>) => {
+    const target = rows.find((r) => r.id === id);
+    if (isItTech && (!target || target.role !== "admin" || target.id === profile?.id)) {
+      toast.error("Access denied. IT Technician can only manage Admin accounts.");
+      return;
+    }
     setBusyId(id);
     const { error } = await supabase.from("staff_profiles").update(patch).eq("id", id);
     if (error) toast.error(error.message);
@@ -249,7 +262,8 @@ const StaffAccounts = () => {
               <tbody>
                 {visibleRows.map((s) => {
                   const manage = canManageRow(s);
-                  const restricted = s.role === "super_admin" && !isSuperAdmin;
+                    const restricted = (s.role === "super_admin" && !isSuperAdmin) || (isItTech && s.role !== "admin");
+                    const itTechBlocked = isItTech && (s.role !== "admin" || s.id === profile?.id);
                   return (
                   <tr key={s.id} className="border-b border-border/60">
                     <td className="py-2.5 px-4 font-medium text-charcoal">{s.full_name ?? "—"}</td>
@@ -319,9 +333,24 @@ const StaffAccounts = () => {
                             {canEditScope && manage ? "Manage Scope" : "View Scope"}
                           </Button>
                         )}
-                        <Button size="sm" variant={s.account_locked ? "default" : "outline"} disabled={busyId === s.id || !canToggleLock(s)} onClick={() => toggleLock(s)}>
-                          <Lock className="w-3 h-3 mr-1" />{s.account_locked ? "Unlock" : "Lock"}
-                        </Button>
+                        {itTechBlocked ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span tabIndex={0}>
+                                  <Button size="sm" variant="outline" disabled>
+                                    <Lock className="w-3 h-3 mr-1" />{s.account_locked ? "Unlock" : "Lock"}
+                                  </Button>
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>{IT_TECH_RESTRICTED_MSG}</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <Button size="sm" variant={s.account_locked ? "default" : "outline"} disabled={busyId === s.id || !canToggleLock(s)} onClick={() => toggleLock(s)}>
+                            <Lock className="w-3 h-3 mr-1" />{s.account_locked ? "Unlock" : "Lock"}
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
