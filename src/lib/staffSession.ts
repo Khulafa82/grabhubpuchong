@@ -26,22 +26,32 @@ export const clearStaffSessionToken = () => {
   }
 };
 
-export const startStaffSession = async (): Promise<string | null> => {
+export const startStaffSession = async (): Promise<string> => {
   const token =
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  const { error } = await supabase.rpc("start_staff_session", {
+  const { data: authData } = await supabase.auth.getUser();
+  console.log("startStaffSession: auth user id =", authData?.user?.id);
+  console.log("startStaffSession: generated token =", token);
+
+  const { data, error } = await supabase.rpc("start_staff_session", {
     p_session_token: token,
-    p_device_info: typeof navigator !== "undefined" ? navigator.platform : null,
-    p_user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+    p_device_info:
+      typeof navigator !== "undefined" ? navigator.platform || "unknown" : "unknown",
+    p_user_agent:
+      typeof navigator !== "undefined" ? navigator.userAgent || "unknown" : "unknown",
     p_ip_address: null,
   });
 
+  console.log("start_staff_session response:", { data, error });
+
   if (error) {
-    console.error("start_staff_session failed", error);
-    return null;
+    console.error("Failed to start staff session:", error);
+    await supabase.auth.signOut();
+    clearStaffSessionToken();
+    throw new Error("Failed to initialize secure staff session.");
   }
 
   setStaffSessionToken(token);
