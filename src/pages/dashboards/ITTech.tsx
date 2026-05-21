@@ -25,6 +25,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useITTechData, StaffRow, CustomerAssignmentRow } from "@/hooks/useITTechData";
 import { supabase } from "@/lib/supabase";
@@ -47,6 +48,7 @@ const items = [
 
 const AVAILABILITY_OPTIONS = ["available", "unavailable", "on_leave", "medical_leave"];
 const STATUS_OPTIONS = ["active", "inactive", "suspended"];
+const IT_TECH_RESTRICTED_MSG = "Access denied. IT Technician can only manage Admin accounts.";
 
 const availabilityClass = (s?: string | null) => {
   switch (s) {
@@ -373,6 +375,7 @@ const StaffActionRow = ({ row, onChange }: { row: StaffRow; onChange: () => void
   const [busy, setBusy] = useState(false);
   const { profile } = useAuth();
   const myRole = profile?.role;
+  const itTechBlocked = myRole === "it_tech" && row.role !== "admin";
   const canToggleLock = (() => {
     if (row.id === profile?.id) return false;
     if (myRole === "it_tech") return row.role === "admin";
@@ -382,6 +385,10 @@ const StaffActionRow = ({ row, onChange }: { row: StaffRow; onChange: () => void
   })();
 
   const update = async (patch: Partial<StaffRow>) => {
+    if (itTechBlocked) {
+      toast.error(IT_TECH_RESTRICTED_MSG);
+      return;
+    }
     setBusy(true);
     const { error } = await supabase.from("staff_profiles").update(patch).eq("id", row.id);
     setBusy(false);
@@ -393,6 +400,10 @@ const StaffActionRow = ({ row, onChange }: { row: StaffRow; onChange: () => void
   };
 
   const toggleLock = async () => {
+    if (itTechBlocked || !canToggleLock) {
+      toast.error(IT_TECH_RESTRICTED_MSG);
+      return;
+    }
     const next = !row.account_locked;
     setBusy(true);
     const { error } = await supabase
@@ -428,36 +439,54 @@ const StaffActionRow = ({ row, onChange }: { row: StaffRow; onChange: () => void
       <td className="py-2.5 pr-4 text-muted-foreground">{row.email ?? "—"}</td>
       <td className="py-2.5 pr-4 text-muted-foreground">{row.role ?? "—"}</td>
       <td className="py-2.5 pr-4">
-        <Select
-          value={row.status ?? undefined}
-          onValueChange={(value) => update({ status: value })}
-          disabled={busy}
-        >
-          <SelectTrigger className="h-8 w-32">
-            <SelectValue placeholder="status" />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_OPTIONS.map((s) => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span tabIndex={itTechBlocked ? 0 : undefined} className="inline-block">
+                <Select
+                  value={row.status ?? undefined}
+                  onValueChange={(value) => update({ status: value })}
+                  disabled={busy || itTechBlocked}
+                >
+                  <SelectTrigger disabled={busy || itTechBlocked} className="h-8 w-32">
+                    <SelectValue placeholder="status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </span>
+            </TooltipTrigger>
+            {itTechBlocked && <TooltipContent>{IT_TECH_RESTRICTED_MSG}</TooltipContent>}
+          </Tooltip>
+        </TooltipProvider>
       </td>
       <td className="py-2.5 pr-4">
-        <Select
-          value={row.availability_status ?? undefined}
-          onValueChange={(value) => update({ availability_status: value })}
-          disabled={busy}
-        >
-          <SelectTrigger className="h-8 w-36">
-            <SelectValue placeholder="availability" />
-          </SelectTrigger>
-          <SelectContent>
-            {AVAILABILITY_OPTIONS.map((s) => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span tabIndex={itTechBlocked ? 0 : undefined} className="inline-block">
+                <Select
+                  value={row.availability_status ?? undefined}
+                  onValueChange={(value) => update({ availability_status: value })}
+                  disabled={busy || itTechBlocked}
+                >
+                  <SelectTrigger disabled={busy || itTechBlocked} className="h-8 w-36">
+                    <SelectValue placeholder="availability" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AVAILABILITY_OPTIONS.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </span>
+            </TooltipTrigger>
+            {itTechBlocked && <TooltipContent>{IT_TECH_RESTRICTED_MSG}</TooltipContent>}
+          </Tooltip>
+        </TooltipProvider>
       </td>
       <td className="py-2.5 pr-4 text-right">
         <Button
