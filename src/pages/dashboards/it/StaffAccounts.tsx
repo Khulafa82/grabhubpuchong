@@ -283,16 +283,46 @@ const StaffAccounts = () => {
                       </div>
                     </td>
                     <td className="py-2.5 px-4">
-                      <Select value={s.status ?? undefined} onValueChange={(v) => update(s.id, { status: v })} disabled={busyId === s.id || !manage}>
-                        <SelectTrigger className="h-8 w-32"><SelectValue placeholder="status" /></SelectTrigger>
-                        <SelectContent>{STATUS.map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
-                      </Select>
+                      {itTechBlocked ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span tabIndex={0} className="inline-block">
+                                <Select value={s.status ?? undefined} disabled>
+                                  <SelectTrigger className="h-8 w-32"><SelectValue placeholder="status" /></SelectTrigger>
+                                </Select>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>{IT_TECH_RESTRICTED_MSG}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <Select value={s.status ?? undefined} onValueChange={(v) => update(s.id, { status: v })} disabled={busyId === s.id || !manage}>
+                          <SelectTrigger className="h-8 w-32"><SelectValue placeholder="status" /></SelectTrigger>
+                          <SelectContent>{STATUS.map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
+                        </Select>
+                      )}
                     </td>
                     <td className="py-2.5 px-4">
-                      <Select value={s.availability_status ?? undefined} onValueChange={(v) => update(s.id, { availability_status: v })} disabled={busyId === s.id || !manage}>
-                        <SelectTrigger className="h-8 w-36"><SelectValue placeholder="availability" /></SelectTrigger>
-                        <SelectContent>{AVAIL.map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
-                      </Select>
+                      {itTechBlocked ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span tabIndex={0} className="inline-block">
+                                <Select value={s.availability_status ?? undefined} disabled>
+                                  <SelectTrigger className="h-8 w-36"><SelectValue placeholder="availability" /></SelectTrigger>
+                                </Select>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>{IT_TECH_RESTRICTED_MSG}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <Select value={s.availability_status ?? undefined} onValueChange={(v) => update(s.id, { availability_status: v })} disabled={busyId === s.id || !manage}>
+                          <SelectTrigger className="h-8 w-36"><SelectValue placeholder="availability" /></SelectTrigger>
+                          <SelectContent>{AVAIL.map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
+                        </Select>
+                      )}
                     </td>
                     <td className="py-2.5 px-4 text-muted-foreground text-xs">{s.employment_status ?? "—"}</td>
                     <td className="py-2.5 px-4">
