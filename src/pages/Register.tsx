@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   Car, Bike, MapPin, RefreshCw, UserPlus, ChevronLeft, ChevronRight,
   Check, AlertCircle, Loader2, ShieldCheck, XCircle, Footprints,
@@ -32,18 +32,6 @@ import {
   GMAIL_ERROR_EN,
 } from "@/utils/customerValidation";
 
-const RECAPTCHA_SITE_KEY = "6Ldn5p4sAAAAAA5Mrjnt_mDjLfcsadxqwxFBIsGd";
-
-declare global {
-  interface Window {
-    grecaptcha?: {
-      render: (el: HTMLElement, opts: Record<string, unknown>) => number;
-      reset: (id?: number) => void;
-      getResponse: (id?: number) => string;
-    };
-    onRecaptchaLoad?: () => void;
-  }
-}
 
 type UserRole = "GrabCar" | "GrabFood" | "";
 type AccountStatus = "new" | "reactivation" | "";
@@ -111,49 +99,6 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
   const [phone, setPhone] = useState("");
   const [stateVal, setStateVal] = useState("");
 
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const captchaRef = useRef<HTMLDivElement>(null);
-  const widgetIdRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (step !== total) return;
-    const renderWidget = () => {
-      if (!window.grecaptcha || !captchaRef.current || widgetIdRef.current !== null) return;
-      try {
-        widgetIdRef.current = window.grecaptcha.render(captchaRef.current, {
-          sitekey: RECAPTCHA_SITE_KEY,
-          callback: (token: string) => setCaptchaToken(token),
-          "expired-callback": () => setCaptchaToken(null),
-          "error-callback": () => setCaptchaToken(null),
-        });
-      } catch {
-        /* already rendered */
-      }
-    };
-    if (window.grecaptcha) {
-      renderWidget();
-    } else {
-      window.onRecaptchaLoad = renderWidget;
-      const existing = document.querySelector('script[data-recaptcha]');
-      if (!existing) {
-        const s = document.createElement("script");
-        s.src = "https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit";
-        s.async = true;
-        s.defer = true;
-        s.setAttribute("data-recaptcha", "true");
-        document.head.appendChild(s);
-      }
-    }
-  }, [step]);
-
-  const resetCaptcha = () => {
-    setCaptchaToken(null);
-    try {
-      window.grecaptcha?.reset(widgetIdRef.current ?? undefined);
-    } catch {
-      /* noop */
-    }
-  };
 
   const total = stepTitles.length;
 
@@ -213,23 +158,8 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
       toast({ title: "Please check the form", description: err, variant: "destructive" });
       return;
     }
-    if (!captchaToken) {
-      toast({ title: "Please complete the reCAPTCHA verification.", variant: "destructive" });
-      return;
-    }
     setSubmitting(true);
 
-    // Verify reCAPTCHA via edge function
-    const { data: capData, error: capErr } = await supabase.functions.invoke(
-      "verify-recaptcha",
-      { body: { token: captchaToken } },
-    );
-    if (capErr || !capData || (capData as { success?: boolean }).success !== true) {
-      toast({ title: "Captcha verification failed", description: "Please try again.", variant: "destructive" });
-      resetCaptcha();
-      setSubmitting(false);
-      return;
-    }
 
     const payload: Record<string, unknown> = {
       full_name: normalizeName(fullName).trim(),
@@ -277,7 +207,7 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
         description: error.message || "Unknown error",
         variant: "destructive",
       });
-      resetCaptcha();
+      setSubmitting(false);
       return;
     }
     navigate(walkIn ? "/registration-success?walk_in=1" : "/registration-success");
@@ -755,13 +685,6 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
                   </p>
                 </div>
               </div>
-              <div className="mt-6">
-                <Label className="block mb-2">Verification</Label>
-                <div ref={captchaRef} />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Please complete the reCAPTCHA to submit your registration.
-                </p>
-              </div>
             </div>
           )}
 
@@ -779,7 +702,7 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
                 Next <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             ) : (
-              <Button onClick={submit} disabled={submitting || !captchaToken} className="gradient-brand">
+              <Button onClick={submit} disabled={submitting} className="gradient-brand">
                 {submitting ? (
                   <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Submitting…</>
                 ) : (
