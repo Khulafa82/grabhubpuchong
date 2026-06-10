@@ -99,49 +99,6 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
   const [phone, setPhone] = useState("");
   const [stateVal, setStateVal] = useState("");
 
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const captchaRef = useRef<HTMLDivElement>(null);
-  const widgetIdRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (step !== total) return;
-    const renderWidget = () => {
-      if (!window.grecaptcha || !captchaRef.current || widgetIdRef.current !== null) return;
-      try {
-        widgetIdRef.current = window.grecaptcha.render(captchaRef.current, {
-          sitekey: RECAPTCHA_SITE_KEY,
-          callback: (token: string) => setCaptchaToken(token),
-          "expired-callback": () => setCaptchaToken(null),
-          "error-callback": () => setCaptchaToken(null),
-        });
-      } catch {
-        /* already rendered */
-      }
-    };
-    if (window.grecaptcha) {
-      renderWidget();
-    } else {
-      window.onRecaptchaLoad = renderWidget;
-      const existing = document.querySelector('script[data-recaptcha]');
-      if (!existing) {
-        const s = document.createElement("script");
-        s.src = "https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit";
-        s.async = true;
-        s.defer = true;
-        s.setAttribute("data-recaptcha", "true");
-        document.head.appendChild(s);
-      }
-    }
-  }, [step]);
-
-  const resetCaptcha = () => {
-    setCaptchaToken(null);
-    try {
-      window.grecaptcha?.reset(widgetIdRef.current ?? undefined);
-    } catch {
-      /* noop */
-    }
-  };
 
   const total = stepTitles.length;
 
