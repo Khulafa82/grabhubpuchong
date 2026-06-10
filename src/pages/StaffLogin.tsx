@@ -66,7 +66,6 @@ const StaffLogin = () => {
     if (profErr || !prof) {
       await supabase.auth.signOut();
       setError("Access denied. No staff profile found for this account.");
-      resetCaptcha();
       setLoading(false);
       return;
     }
@@ -74,7 +73,6 @@ const StaffLogin = () => {
     if (prof.status !== "active") {
       await supabase.auth.signOut();
       setError("Your account is inactive. Please contact your administrator.");
-      resetCaptcha();
       setLoading(false);
       return;
     }
@@ -88,7 +86,6 @@ const StaffLogin = () => {
         /* noop */
       }
       setError("Access denied. Your account has been locked. Please contact IT Technician.");
-      resetCaptcha();
       setLoading(false);
       return;
     }
@@ -97,7 +94,6 @@ const StaffLogin = () => {
     if (!path) {
       await supabase.auth.signOut();
       setError("Your account role is not recognized.");
-      resetCaptcha();
       setLoading(false);
       return;
     }
