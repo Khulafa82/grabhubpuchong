@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff, ShieldCheck, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,19 +10,6 @@ import { Logo } from "@/components/site/Logo";
 import { supabase, ROLE_TO_PATH, StaffRole } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
-const RECAPTCHA_SITE_KEY = "6Ldn5p4sAAAAAA5Mrjnt_mDjLfcsadxqwxFBIsGd";
-
-declare global {
-  interface Window {
-    grecaptcha?: {
-      render: (el: HTMLElement, opts: Record<string, unknown>) => number;
-      reset: (id?: number) => void;
-      getResponse: (id?: number) => string;
-    };
-    onRecaptchaLoad?: () => void;
-  }
-}
-
 const StaffLogin = () => {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
@@ -31,9 +18,6 @@ const StaffLogin = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const captchaRef = useRef<HTMLDivElement>(null);
-  const widgetIdRef = useRef<number | null>(null);
 
   // Load reCAPTCHA script and render widget
   useEffect(() => {
