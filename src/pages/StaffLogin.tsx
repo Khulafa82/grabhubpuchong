@@ -43,28 +43,8 @@ const StaffLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (!captchaToken) {
-      setError("Please complete the reCAPTCHA verification.");
-      return;
-    }
-
     setLoading(true);
 
-    // Step 1: verify reCAPTCHA via edge function
-    const { data: capData, error: capErr } = await supabase.functions.invoke(
-      "verify-recaptcha",
-      { body: { token: captchaToken } },
-    );
-
-    if (capErr || !capData || (capData as { success?: boolean }).success !== true) {
-      setError("Captcha verification failed. Please try again.");
-      resetCaptcha();
-      setLoading(false);
-      return;
-    }
-
-    // Step 2: proceed with normal Supabase auth
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
@@ -72,7 +52,6 @@ const StaffLogin = () => {
 
     if (signInError || !signInData.user) {
       setError(signInError?.message || "Invalid credentials. Please try again.");
-      resetCaptcha();
       setLoading(false);
       return;
     }
@@ -185,8 +164,7 @@ const StaffLogin = () => {
                 Forgot password?
               </button>
             </div>
-            <div ref={captchaRef} className="flex justify-center" />
-            <Button type="submit" disabled={loading || !captchaToken} className="gradient-brand w-full">
+            <Button type="submit" disabled={loading} className="gradient-brand w-full">
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Signing in…</> : "Sign in"}
             </Button>
           </form>
