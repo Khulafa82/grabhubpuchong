@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Logo } from "@/components/site/Logo";
 import { supabase, ROLE_TO_PATH, StaffRole } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { FakeCaptcha } from "@/components/ui/fake-captcha";
 
 const StaffLogin = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const StaffLogin = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
 
 
   // Auto-redirect if already signed in with valid profile
@@ -43,6 +45,10 @@ const StaffLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!captchaVerified) {
+      setError("Please confirm you're not a robot.");
+      return;
+    }
     setLoading(true);
 
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -160,7 +166,11 @@ const StaffLogin = () => {
                 Forgot password?
               </button>
             </div>
-            <Button type="submit" disabled={loading} className="gradient-brand w-full">
+            <div>
+              <Label className="block mb-2">Security Check</Label>
+              <FakeCaptcha verified={captchaVerified} onVerify={setCaptchaVerified} />
+            </div>
+            <Button type="submit" disabled={loading || !captchaVerified} className="gradient-brand w-full">
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Signing in…</> : "Sign in"}
             </Button>
           </form>
