@@ -15,6 +15,7 @@ import {
 import { Logo } from "@/components/site/Logo";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { FakeCaptcha } from "@/components/ui/fake-captcha";
 import {
   isValidMalaysiaPhone,
   sanitizeMalaysiaPhoneInput,
@@ -98,6 +99,7 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [stateVal, setStateVal] = useState("");
+  const [captchaVerified, setCaptchaVerified] = useState(false);
 
 
   const total = stepTitles.length;
@@ -149,6 +151,7 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
     if (!isValidGmail(email)) return GMAIL_ERROR_EN;
     if (!isValidMalaysiaPhone(phone)) return MALAYSIA_PHONE_ERROR_EN;
     if (!stateVal) return "State is required.";
+    if (!captchaVerified) return "Please confirm you're not a robot.";
     return null;
   };
 
