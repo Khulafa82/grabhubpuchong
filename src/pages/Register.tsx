@@ -688,6 +688,10 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
                   </p>
                 </div>
               </div>
+              <div className="mt-6">
+                <Label className="block mb-2">Security Check</Label>
+                <FakeCaptcha verified={captchaVerified} onVerify={setCaptchaVerified} />
+              </div>
             </div>
           )}
 
@@ -705,7 +709,7 @@ const Register = ({ walkIn = false }: RegisterProps = {}) => {
                 Next <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             ) : (
-              <Button onClick={submit} disabled={submitting} className="gradient-brand">
+              <Button onClick={submit} disabled={submitting || !captchaVerified} className="gradient-brand">
                 {submitting ? (
                   <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Submitting…</>
                 ) : (
