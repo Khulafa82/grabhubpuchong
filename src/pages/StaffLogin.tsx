@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Logo } from "@/components/site/Logo";
 import { supabase, ROLE_TO_PATH, StaffRole } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { FakeCaptcha } from "@/components/ui/fake-captcha";
+import { GoogleRecaptcha } from "@/components/ui/google-recaptcha";
 
 const StaffLogin = () => {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ const StaffLogin = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
 
   // Auto-redirect if already signed in with valid profile
@@ -45,7 +45,7 @@ const StaffLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!captchaVerified) {
+    if (!captchaToken) {
       setError("Please confirm you're not a robot.");
       return;
     }
@@ -167,10 +167,9 @@ const StaffLogin = () => {
               </button>
             </div>
             <div>
-              <Label className="block mb-2">Security Check</Label>
-              <FakeCaptcha verified={captchaVerified} onVerify={setCaptchaVerified} />
+              <GoogleRecaptcha onVerify={setCaptchaToken} />
             </div>
-            <Button type="submit" disabled={loading || !captchaVerified} className="gradient-brand w-full">
+            <Button type="submit" disabled={loading || !captchaToken} className="gradient-brand w-full">
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Signing in…</> : "Sign in"}
             </Button>
           </form>
